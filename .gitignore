@@ -37,6 +37,20 @@ build/
 
 ### Logs ###
 *.log
+logs/
+
+### Monitoring & Observability Data ###
+# Loki runtime data
+loki/wal/
+loki/chunks/
+loki/tsdb-shipper-active/
+loki/tsdb-shipper-cache/
+loki/compactor/
+loki/positions.yaml
+
+# Prometheus runtime data
+data/
+prometheus/data/
 
 ### OS ###
 .DS_Store

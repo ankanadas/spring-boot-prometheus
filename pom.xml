@@ -9,9 +9,9 @@
         <relativePath/>
     </parent>
     <groupId>com.example</groupId>
-    <artifactId>metrics-demo</artifactId>
+    <artifactId>spring-boot-prometheus</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>metrics-demo</name>
+    <name>spring-boot-prometheus</name>
     <description>Spring Boot app with Prometheus and Grafana monitoring</description>
     <properties>
         <java.version>17</java.version>

@@ -1,4 +1,4 @@
-# Spring Boot Metrics Demo with Prometheus & Grafana
+# Spring Boot Prometheus Monitoring Demo
 
 A complete Spring Boot application with Prometheus metrics and Grafana dashboards for monitoring.
 
@@ -191,6 +191,7 @@ brew services stop grafana
 ## Project Structure
 
 ```
+spring-boot-prometheus/
 ├── src/main/java/com/example/metricsdemo/
 │   ├── MetricsDemoApplication.java      # Main application
 │   ├── controller/UserController.java   # REST API with metrics

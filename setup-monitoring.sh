@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🔧 Setting up Prometheus and Grafana on macOS..."
+echo "🔧 Setting up Prometheus and Grafana for Spring Boot Prometheus Demo..."
 
 # Check if Homebrew is installed
 if ! command -v brew &> /dev/null; then

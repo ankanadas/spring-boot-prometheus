@@ -76,16 +76,34 @@ grafana-server --config=/usr/local/etc/grafana/grafana.ini --homepath /usr/local
 - **Prometheus**: http://localhost:9090
 - **Loki**: http://localhost:3100 (API only, no web UI)
 - **Grafana**: http://localhost:3000 (admin/admin)
+- **Swagger UI**: http://localhost:8080/swagger-ui.html
+- **OpenAPI Docs**: http://localhost:8080/api-docs
+
+## API Documentation
+
+### Swagger UI
+Access the interactive API documentation at: **http://localhost:8080/swagger-ui.html**
+
+The Swagger UI provides:
+- Complete API documentation with request/response schemas
+- Interactive "Try it out" functionality to test endpoints
+- Detailed parameter descriptions
+- Response examples and status codes
+- Information about Redis caching and Prometheus metrics
+
+### OpenAPI Specification
+Raw OpenAPI JSON available at: **http://localhost:8080/api-docs**
 
 ## API Endpoints
 
 ### User Management
-- `GET /api/users` - Get all users (supports pagination with `?page=0&size=10`)
+- `GET /api/users` - Get all users (supports pagination with `?page=0&size=5`)
 - `GET /api/users/paged` - Get users with pagination metadata
-- `GET /api/users/{id}` - Get user by ID
-- `POST /api/users` - Create new user
-- `PUT /api/users/{id}` - Update user
-- `DELETE /api/users/{id}` - Delete user
+- `GET /api/users/search` - Search users by name, email, or department
+- `GET /api/users/{id}` - Get user by ID (checks Redis cache first)
+- `POST /api/users` - Create new user (caches in Redis)
+- `PUT /api/users/{id}` - Update user (updates Redis cache)
+- `DELETE /api/users/{id}` - Delete user (removes from Redis cache)
 
 ### Health & Monitoring
 - `GET /api/users/health` - Health check

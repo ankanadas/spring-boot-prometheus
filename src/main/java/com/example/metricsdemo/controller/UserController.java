@@ -73,6 +73,30 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/search")
+    @Timed(value = "search_users_duration", description = "Time taken to search users")
+    public ResponseEntity<PagedResponse<User>> searchUsers(
+            @RequestParam String query,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size) {
+        userRetrievalCounter.increment();
+        
+        // Simulate some processing time
+        simulateProcessingTime();
+        
+        Page<User> userPage = userService.searchUsers(query, page, size);
+        
+        PagedResponse<User> response = new PagedResponse<>(
+            userPage.getContent(),
+            userPage.getNumber(),
+            userPage.getSize(),
+            userPage.getTotalElements(),
+            userPage.getTotalPages()
+        );
+        
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/{id}")
     @Timed(value = "get_user_by_id_duration", description = "Time taken to get user by ID")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {

@@ -51,6 +51,11 @@ public class UserService {
         return userRepository.findAll(pageable);
     }
 
+    public Page<User> searchUsers(String searchTerm, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return userRepository.searchUsers(searchTerm, pageable);
+    }
+
     public User getUserById(Long id) {
         // Try to get from cache first
         User cachedUser = userCacheService.getCachedUser(id);

@@ -1,0 +1,25 @@
+{
+  "name": "english-bengali-translator",
+  "version": "1.0.0",
+  "description": "A translator from English to Bengali using OpenAI API",
+  "type": "module",
+  "main": "translator.mjs",
+  "scripts": {
+    "translate": "node translator.mjs",
+    "interactive": "node interactive-translator.mjs",
+    "start": "node interactive-translator.mjs",
+    "web": "node server.mjs"
+  },
+  "dependencies": {
+    "openai": "^4.0.0"
+  },
+  "keywords": [
+    "translator",
+    "english",
+    "bengali",
+    "openai",
+    "language"
+  ],
+  "author": "",
+  "license": "MIT"
+}

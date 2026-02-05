@@ -24,6 +24,8 @@ public class UserController {
 
     private final Counter userCreationCounter;
     private final Counter userRetrievalCounter;
+    private final Counter userUpdateCounter;
+    private final Counter userDeletionCounter;
     private final Random random = new Random();
 
     public UserController(MeterRegistry meterRegistry) {
@@ -33,6 +35,14 @@ public class UserController {
         
         this.userRetrievalCounter = Counter.builder("users_retrieved_total")
                 .description("Total number of user retrievals")
+                .register(meterRegistry);
+        
+        this.userUpdateCounter = Counter.builder("users_updated_total")
+                .description("Total number of users updated")
+                .register(meterRegistry);
+        
+        this.userDeletionCounter = Counter.builder("users_deleted_total")
+                .description("Total number of users deleted")
                 .register(meterRegistry);
     }
 
@@ -124,6 +134,8 @@ public class UserController {
     @PutMapping("/{id}")
     @Timed(value = "update_user_duration", description = "Time taken to update a user")
     public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User userDetails) {
+        userUpdateCounter.increment();
+        
         // Simulate some processing time
         simulateProcessingTime();
         
@@ -134,6 +146,8 @@ public class UserController {
     @DeleteMapping("/{id}")
     @Timed(value = "delete_user_duration", description = "Time taken to delete a user")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        userDeletionCounter.increment();
+        
         // Simulate some processing time
         simulateProcessingTime();
         

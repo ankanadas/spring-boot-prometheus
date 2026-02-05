@@ -84,32 +84,53 @@ public class UserService {
     }
 
     public User updateUser(Long id, User userDetails) {
+        logger.info("Attempting to update user with ID: {}", id);
         Optional<User> optionalUser = userRepository.findById(id);
         if (optionalUser.isPresent()) {
             User user = optionalUser.get();
+            String oldName = user.getName();
+            String oldEmail = user.getEmail();
+            String oldDepartment = user.getDepartment();
+            
             user.setName(userDetails.getName());
             user.setEmail(userDetails.getEmail());
             user.setDepartment(userDetails.getDepartment());
             User updatedUser = userRepository.save(user);
             
+            logger.info("User updated successfully - ID: {}, Old: [name={}, email={}, dept={}], New: [name={}, email={}, dept={}]", 
+                id, oldName, oldEmail, oldDepartment, 
+                updatedUser.getName(), updatedUser.getEmail(), updatedUser.getDepartment());
+            
             // Update cache with new user data
             userCacheService.cacheUser(updatedUser);
+            logger.info("Updated user {} cached in Redis", id);
+            
             return updatedUser;
         }
         
         // User not found - throw exception
+        logger.error("Failed to update user - User with ID {} not found", id);
         throw new UserNotFoundException(id);
     }
 
     public boolean deleteUser(Long id) {
+        logger.info("Attempting to delete user with ID: {}", id);
         if (userRepository.existsById(id)) {
+            Optional<User> user = userRepository.findById(id);
+            String userName = user.map(User::getName).orElse("Unknown");
+            
             userRepository.deleteById(id);
+            logger.info("User deleted successfully - ID: {}, Name: {}", id, userName);
+            
             // Remove from cache
             userCacheService.evictUser(id);
+            logger.info("User {} evicted from Redis cache", id);
+            
             return true;
         }
         
         // User not found - throw exception
+        logger.error("Failed to delete user - User with ID {} not found", id);
         throw new UserNotFoundException(id);
     }
 

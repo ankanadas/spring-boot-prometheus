@@ -13,7 +13,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #a8e6cf 0%, #ffd3b6 100%);
             min-height: 100vh;
             padding: 20px;
         }
@@ -28,7 +28,7 @@
         }
 
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #a8e6cf 0%, #88d8b0 100%);
             color: white;
             padding: 30px;
             text-align: center;
@@ -53,10 +53,10 @@
         }
 
         .section h2 {
-            color: #667eea;
+            color: #5fb88f;
             margin-bottom: 20px;
             font-size: 1.8em;
-            border-bottom: 3px solid #667eea;
+            border-bottom: 3px solid #5fb88f;
             padding-bottom: 10px;
         }
 
@@ -86,7 +86,7 @@
         input[type="email"]:focus,
         input[type="number"]:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #88d8b0;
         }
 
         .btn {
@@ -100,23 +100,23 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #a8e6cf 0%, #88d8b0 100%);
             color: white;
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 5px 15px rgba(136, 216, 176, 0.4);
         }
 
         .btn-secondary {
-            background: #6c757d;
+            background: #ffb6a3;
             color: white;
             margin-left: 10px;
         }
 
         .btn-secondary:hover {
-            background: #5a6268;
+            background: #ff9f89;
         }
 
         .search-bar {
@@ -144,8 +144,30 @@
 
         .user-table th {
             background: #f8f9fa;
-            color: #667eea;
+            color: #5fb88f;
             font-weight: 600;
+        }
+
+        .user-table th.sortable {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            padding-right: 25px;
+        }
+
+        .user-table th.sortable:hover {
+            background: #e9ecef;
+        }
+
+        .sort-icon {
+            display: inline-block;
+            margin-left: 5px;
+            font-size: 0.8em;
+            color: #ccc;
+        }
+
+        .sort-icon.active {
+            color: #5fb88f;
         }
 
         .user-table tr:hover {
@@ -212,16 +234,16 @@
 
         .pagination button {
             padding: 8px 15px;
-            border: 2px solid #667eea;
+            border: 2px solid #88d8b0;
             background: white;
-            color: #667eea;
+            color: #5fb88f;
             border-radius: 5px;
             cursor: pointer;
             font-weight: 600;
         }
 
         .pagination button:hover:not(:disabled) {
-            background: #667eea;
+            background: #88d8b0;
             color: white;
         }
 
@@ -231,7 +253,7 @@
         }
 
         .pagination .active {
-            background: #667eea;
+            background: #88d8b0;
             color: white;
         }
 
@@ -243,7 +265,7 @@
         }
 
         .stat-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #a8e6cf 0%, #88d8b0 100%);
             color: white;
             padding: 20px;
             border-radius: 10px;
@@ -262,7 +284,129 @@
         .loading {
             text-align: center;
             padding: 20px;
-            color: #667eea;
+            color: #5fb88f;
+        }
+
+        .search-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab-button {
+            padding: 12px 24px;
+            border: none;
+            background: transparent;
+            color: #666;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            position: relative;
+            bottom: -2px;
+        }
+
+        .tab-button:hover {
+            color: #5fb88f;
+            background: #f8f9fa;
+        }
+
+        .tab-button.active {
+            color: #5fb88f;
+            border-bottom: 3px solid #5fb88f;
+        }
+
+        .search-panel {
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+
+        .search-panel.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 14px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-edit {
+            background: #88d8b0;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background: #6fc99a;
+        }
+
+        .btn-delete {
+            background: #ffb6a3;
+            color: white;
+            margin-left: 5px;
+        }
+
+        .btn-delete:hover {
+            background: #ff9f89;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            color: #5fb88f;
+            margin: 0;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #000;
         }
     </style>
 </head>
@@ -318,10 +462,29 @@
             <!-- Search Users Section -->
             <div class="section">
                 <h2>🔍 Search Users</h2>
-                <div class="search-bar">
-                    <input type="text" id="searchInput" placeholder="Search by name, email, or department...">
-                    <button onclick="searchUsers()" class="btn btn-primary">Search</button>
-                    <button onclick="clearSearch()" class="btn btn-secondary">Show All</button>
+                
+                <!-- Search Type Tabs -->
+                <div class="search-tabs">
+                    <button class="tab-button active" onclick="switchSearchTab('text')">Search by Name/Email/Dept</button>
+                    <button class="tab-button" onclick="switchSearchTab('id')">Search by ID</button>
+                </div>
+
+                <!-- Text Search -->
+                <div id="textSearchPanel" class="search-panel active">
+                    <div class="search-bar">
+                        <input type="text" id="searchInput" placeholder="Search by name, email, or department...">
+                        <button onclick="searchUsers()" class="btn btn-primary">Search</button>
+                        <button onclick="clearSearch()" class="btn btn-secondary">Show All</button>
+                    </div>
+                </div>
+
+                <!-- ID Search -->
+                <div id="idSearchPanel" class="search-panel">
+                    <div class="search-bar">
+                        <input type="number" id="searchIdInput" placeholder="Enter User ID (e.g., 1, 2, 3...)" min="1">
+                        <button onclick="searchById()" class="btn btn-primary">Search</button>
+                        <button onclick="clearSearch()" class="btn btn-secondary">Show All</button>
+                    </div>
                 </div>
 
                 <!-- User Table -->
@@ -332,9 +495,14 @@
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Name</th>
+                            <th class="sortable" onclick="sortTable('name')">
+                                Name <span class="sort-icon" id="sort-name">▲</span>
+                            </th>
                             <th>Email</th>
-                            <th>Department</th>
+                            <th class="sortable" onclick="sortTable('department')">
+                                Department <span class="sort-icon" id="sort-department">▲</span>
+                            </th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="userTableBody">
@@ -348,11 +516,41 @@
         </div>
     </div>
 
+    <!-- Edit User Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="close" onclick="closeEditModal()">&times;</span>
+                <h2>✏️ Edit User</h2>
+            </div>
+            <form id="editUserForm">
+                <input type="hidden" id="editUserId">
+                <div class="form-group">
+                    <label for="editName">Name *</label>
+                    <input type="text" id="editName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="editEmail">Email *</label>
+                    <input type="email" id="editEmail" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="editDepartment">Department *</label>
+                    <input type="text" id="editDepartment" name="department" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Update User</button>
+                <button type="button" onclick="closeEditModal()" class="btn btn-secondary">Cancel</button>
+            </form>
+        </div>
+    </div>
+
     <script>
         let currentPage = 0;
         let pageSize = 5;
         let allUsers = [];
         let currentSearchTerm = '';
+        let currentSortField = '';
+        let currentSortDirection = 'asc';
+        let isSearchById = false;
 
         // Load users on page load
         window.onload = function() {
@@ -409,7 +607,13 @@
                 const data = await response.json();
                 
                 allUsers = data.content;
-                displayUsers(data.content);
+                
+                // Apply client-side sorting if active
+                if (currentSortField) {
+                    sortUsersLocally(allUsers, currentSortField, currentSortDirection);
+                }
+                
+                displayUsers(allUsers);
                 updatePagination(data);
                 updateStats(data);
                 
@@ -426,7 +630,7 @@
             tbody.innerHTML = '';
 
             if (users.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 30px; color: #999;">No users found</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 30px; color: #999;">No users found</td></tr>';
                 return;
             }
 
@@ -439,9 +643,18 @@
                     <td><strong>${user.name}</strong></td>
                     <td>${user.email}</td>
                     <td><span class="badge ${badgeClass}">${user.department}</span></td>
+                    <td>
+                        <button class="btn-small btn-edit" onclick="openEditModal(${user.id}, '${escapeHtml(user.name)}', '${escapeHtml(user.email)}', '${escapeHtml(user.department)}')">Edit</button>
+                        <button class="btn-small btn-delete" onclick="deleteUser(${user.id})">Delete</button>
+                    </td>
                 `;
                 tbody.appendChild(row);
             });
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            return text.replace(/'/g, "\\'").replace(/"/g, '&quot;');
         }
 
         // Get badge class based on department
@@ -493,15 +706,144 @@
             const searchTerm = document.getElementById('searchInput').value.trim();
             currentSearchTerm = searchTerm;
             currentPage = 0; // Reset to first page when searching
+            isSearchById = false;
             loadUsers(0);
         }
 
         // Clear search and show all users
         function clearSearch() {
             document.getElementById('searchInput').value = '';
+            document.getElementById('searchIdInput').value = '';
             currentSearchTerm = '';
             currentPage = 0;
+            isSearchById = false;
             loadUsers(0);
+        }
+
+        // Search by ID
+        async function searchById() {
+            const userId = document.getElementById('searchIdInput').value.trim();
+            
+            if (!userId) {
+                showMessage('error', 'Please enter a user ID');
+                return;
+            }
+
+            if (userId <= 0) {
+                showMessage('error', 'User ID must be a positive number');
+                return;
+            }
+
+            document.getElementById('loadingIndicator').style.display = 'block';
+            
+            try {
+                const response = await fetch(`/api/users/${userId}`);
+                
+                if (response.ok) {
+                    const user = await response.json();
+                    
+                    // Display single user
+                    allUsers = [user];
+                    displayUsers([user]);
+                    
+                    // Update stats for single user
+                    updateStatsForSingleUser();
+                    
+                    // Hide pagination for single result
+                    document.getElementById('pagination').innerHTML = '';
+                    
+                    isSearchById = true;
+                    showMessage('success', `Found user: ${user.name}`);
+                } else if (response.status === 404) {
+                    const error = await response.json();
+                    showMessage('error', error.message || `User with ID ${userId} not found`);
+                    displayUsers([]);
+                    updateStatsForSingleUser();
+                    document.getElementById('pagination').innerHTML = '';
+                } else {
+                    showMessage('error', 'Failed to fetch user');
+                }
+                
+                document.getElementById('loadingIndicator').style.display = 'none';
+            } catch (error) {
+                showMessage('error', 'Network error: ' + error.message);
+                document.getElementById('loadingIndicator').style.display = 'none';
+            }
+        }
+
+        // Update stats for single user search
+        function updateStatsForSingleUser() {
+            document.getElementById('totalUsers').textContent = allUsers.length;
+            document.getElementById('currentPage').textContent = allUsers.length > 0 ? '1' : '0';
+            document.getElementById('totalPages').textContent = allUsers.length > 0 ? '1' : '0';
+        }
+
+        // Switch search tabs
+        function switchSearchTab(type) {
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Update panels
+            document.querySelectorAll('.search-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+
+            if (type === 'text') {
+                document.getElementById('textSearchPanel').classList.add('active');
+            } else {
+                document.getElementById('idSearchPanel').classList.add('active');
+            }
+        }
+
+        // Sort table by field
+        function sortTable(field) {
+            // Toggle sort direction if clicking the same field
+            if (currentSortField === field) {
+                currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortField = field;
+                currentSortDirection = 'asc';
+            }
+
+            // Update sort icons
+            updateSortIcons(field, currentSortDirection);
+
+            // Sort the current page data
+            sortUsersLocally(allUsers, field, currentSortDirection);
+            displayUsers(allUsers);
+        }
+
+        // Sort users array locally
+        function sortUsersLocally(users, field, direction) {
+            users.sort((a, b) => {
+                let aVal = a[field].toLowerCase();
+                let bVal = b[field].toLowerCase();
+                
+                if (direction === 'asc') {
+                    return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+                } else {
+                    return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
+                }
+            });
+        }
+
+        // Update sort icons
+        function updateSortIcons(activeField, direction) {
+            // Reset all icons
+            document.querySelectorAll('.sort-icon').forEach(icon => {
+                icon.classList.remove('active');
+                icon.textContent = '▲';
+            });
+
+            // Set active icon
+            const activeIcon = document.getElementById(`sort-${activeField}`);
+            if (activeIcon) {
+                activeIcon.classList.add('active');
+                activeIcon.textContent = direction === 'asc' ? '▲' : '▼';
+            }
         }
 
         // Show message
@@ -521,6 +863,93 @@
                 searchUsers();
             }
         });
+
+        // Search by ID on Enter key
+        document.getElementById('searchIdInput').addEventListener('keyup', function(e) {
+            if (e.key === 'Enter') {
+                searchById();
+            }
+        });
+
+        // Open edit modal
+        function openEditModal(id, name, email, department) {
+            document.getElementById('editUserId').value = id;
+            document.getElementById('editName').value = name;
+            document.getElementById('editEmail').value = email;
+            document.getElementById('editDepartment').value = department;
+            document.getElementById('editModal').style.display = 'block';
+        }
+
+        // Close edit modal
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+            document.getElementById('editUserForm').reset();
+        }
+
+        // Edit user form submission
+        document.getElementById('editUserForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const userId = document.getElementById('editUserId').value;
+            const user = {
+                name: document.getElementById('editName').value,
+                email: document.getElementById('editEmail').value,
+                department: document.getElementById('editDepartment').value
+            };
+
+            try {
+                const response = await fetch(`/api/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(user)
+                });
+
+                if (response.ok) {
+                    const updatedUser = await response.json();
+                    showMessage('success', `User "${updatedUser.name}" updated successfully!`);
+                    closeEditModal();
+                    loadUsers(currentPage); // Reload current page
+                } else {
+                    const error = await response.json();
+                    showMessage('error', `Error: ${error.message || 'Failed to update user'}`);
+                }
+            } catch (error) {
+                showMessage('error', 'Network error: ' + error.message);
+            }
+        });
+
+        // Delete user
+        async function deleteUser(userId) {
+            if (!confirm('Are you sure you want to delete this user?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/users/${userId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    showMessage('success', 'User deleted successfully!');
+                    loadUsers(currentPage); // Reload current page
+                } else {
+                    const error = await response.json();
+                    showMessage('error', `Error: ${error.message || 'Failed to delete user'}`);
+                }
+            } catch (error) {
+                showMessage('error', 'Network error: ' + error.message);
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('editModal');
+            if (event.target == modal) {
+                closeEditModal();
+            }
+        }
     </script>
 </body>
 </html>

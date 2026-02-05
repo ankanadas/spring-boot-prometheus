@@ -59,5 +59,10 @@ management:
 
 logging:
   level:
-    com.example.metricsdemo: DEBUG
-    org.springframework.web: DEBUG
+    com.example.metricsdemo: INFO
+    org.springframework.web: INFO
+  file:
+    name: logs/spring-boot.log
+  pattern:
+    file: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n'
+    console: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n'

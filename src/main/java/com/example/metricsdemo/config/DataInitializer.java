@@ -20,8 +20,18 @@ public class DataInitializer implements CommandLineRunner {
             userRepository.save(new User("Jane Smith", "jane.smith@example.com", "Marketing"));
             userRepository.save(new User("Bob Johnson", "bob.johnson@example.com", "Sales"));
             userRepository.save(new User("Alice Brown", "alice.brown@example.com", "HR"));
-            userRepository.save(new User("Charlie Wilson", "charlie.wilson@example.com", "Engineering"));
-            
+            userRepository.save(new User("Charlie Wilson", "charlie.wilson@example.com", "Engineering"));            
+            userRepository.save(new User("Tony Stark", "tony.stark@example.com", "Engineering"));
+            userRepository.save(new User("Bruce Wayne", "bruce.wayne@example.com", "Security"));
+            userRepository.save(new User("Peter Parker", "peter.parker@example.com", "Photography"));
+            userRepository.save(new User("Diana Prince", "diana.prince@example.com", "Legal"));
+            userRepository.save(new User("Clark Kent", "clark.kent@example.com", "Journalism"));
+            userRepository.save(new User("Natasha Romanoff", "natasha.romanoff@example.com", "Security"));
+            userRepository.save(new User("Steve Rogers", "steve.rogers@example.com", "Leadership"));
+            userRepository.save(new User("Wanda Maximoff", "wanda.maximoff@example.com", "Research"));
+            userRepository.save(new User("Scott Lang", "scott.lang@example.com", "Engineering"));
+            userRepository.save(new User("Carol Danvers", "carol.danvers@example.com", "Operations"));
+
             System.out.println("✅ Sample data initialized: " + userRepository.count() + " users created");
         }
     }

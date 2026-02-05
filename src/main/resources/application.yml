@@ -1,0 +1,52 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: metrics-demo
+  
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: password
+  
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5, 0.95, 0.99
+      slo:
+        http.server.requests: 10ms, 50ms, 100ms, 200ms, 500ms
+
+logging:
+  level:
+    com.example.metricsdemo: DEBUG
+    org.springframework.web: DEBUG

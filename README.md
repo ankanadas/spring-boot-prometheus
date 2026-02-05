@@ -1,113 +1,223 @@
-# English to Bengali Translator
+# Spring Boot Metrics Demo with Prometheus & Grafana
 
-A simple and effective English to Bengali translator using OpenAI's API.
+A complete Spring Boot application with Prometheus metrics and Grafana dashboards for monitoring.
 
 ## Features
 
-- **Accurate Translation**: Uses GPT-4 for high-quality English to Bengali translations
-- **Multiple Interfaces**: Command line, interactive terminal, and web interface
-- **Batch Translation**: Translate multiple texts at once
-- **Error Handling**: Robust error handling for API failures
+- **Spring Boot REST API** with User CRUD operations
+- **Prometheus metrics** integration with custom counters, timers, and gauges
+- **Grafana dashboards** for visualization
+- **H2 in-memory database** with sample data
+- **Custom business metrics** for monitoring user operations
 
-## Setup
+## Architecture
 
-1. **Install Dependencies**
-   ```bash
-   npm install
-   ```
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Spring Boot   │───▶│   Prometheus    │───▶│    Grafana      │
+│   Application   │    │   (Metrics)     │    │  (Dashboard)    │
+│   Port: 8080    │    │   Port: 9090    │    │   Port: 3000    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
 
-2. **Set OpenAI API Key**
-   ```bash
-   export OPENAI_API_KEY="your-api-key-here"
-   ```
-   
-   Or create a `.env` file:
-   ```
-   OPENAI_API_KEY=your-api-key-here
-   ```
+## Quick Start
 
-## Usage
+### Prerequisites
+- Java 17+ (you have Java 21 ✅)
+- Homebrew (for installing Prometheus & Grafana)
 
-### 1. Interactive Terminal Mode
+### Step 1: Start Spring Boot Application
 ```bash
-npm run interactive
-# or
-npm start
+# Build and run the application
+./mvnw clean package -DskipTests
+java -jar target/metrics-demo-0.0.1-SNAPSHOT.jar
 ```
 
-### 2. Direct Translation (Code)
+### Step 2: Install and Start Monitoring Tools
 ```bash
-node translator.mjs
+# Install Prometheus and Grafana
+brew install prometheus grafana
+
+# Start Prometheus (in new terminal)
+prometheus --config.file=prometheus/prometheus.yml
+
+# Start Grafana (in another terminal)
+grafana-server --config=/usr/local/etc/grafana/grafana.ini --homepath /usr/local/share/grafana
 ```
 
-### 3. Web Interface
-Open `web-translator.html` in your browser for a visual interface.
+### Step 3: Access the Services
+- **Spring Boot App**: http://localhost:8080
+- **API Endpoints**: http://localhost:8080/api/users
+- **Metrics**: http://localhost:8080/actuator/prometheus
+- **Health Check**: http://localhost:8080/actuator/health
+- **H2 Database Console**: http://localhost:8080/h2-console
+  - JDBC URL: `jdbc:h2:mem:testdb`
+  - Username: `sa`
+  - Password: `password`
+- **Prometheus**: http://localhost:9090
+- **Grafana**: http://localhost:3000 (admin/admin)
 
-### 4. Programmatic Usage
-```javascript
-import { EnglishToBengaliTranslator } from './translator.mjs';
+## API Endpoints
 
-const translator = new EnglishToBengaliTranslator();
+### User Management
+- `GET /api/users` - Get all users
+- `GET /api/users/{id}` - Get user by ID
+- `POST /api/users` - Create new user
+- `PUT /api/users/{id}` - Update user
+- `DELETE /api/users/{id}` - Delete user
 
-// Single translation
-const bengali = await translator.translate("Hello, how are you?");
-console.log(bengali); // Output: হ্যালো, আপনি কেমন আছেন?
+### Health & Monitoring
+- `GET /api/users/health` - Health check
+- `GET /api/users/slow` - Slow endpoint (for testing)
+- `GET /actuator/health` - Spring Boot health
+- `GET /actuator/metrics` - All metrics
+- `GET /actuator/prometheus` - Prometheus metrics
 
-// Batch translation
-const results = await translator.translateBatch([
-    "Good morning",
-    "Thank you",
-    "Have a nice day"
-]);
+## Sample API Calls
+
+### Create a User
+```bash
+curl -X POST http://localhost:8080/api/users \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Test User",
+    "email": "test@example.com",
+    "department": "Engineering"
+  }'
 ```
 
-## Examples
+### Get All Users
+```bash
+curl http://localhost:8080/api/users
+```
 
-| English | Bengali |
-|---------|---------|
-| Hello | হ্যালো |
-| Good morning | সুপ্রভাত |
-| Thank you | ধন্যবাদ |
-| How are you? | আপনি কেমন আছেন? |
-| I love you | আমি তোমাকে ভালোবাসি |
-| Goodbye | বিদায় |
+### Test Slow Endpoint
+```bash
+curl http://localhost:8080/api/users/slow
+```
 
-## API Reference
+## Custom Metrics
 
-### EnglishToBengaliTranslator
+The application exposes several custom metrics:
 
-#### Methods
+### Counters
+- `users_created_total` - Total number of users created
+- `users_retrieved_total` - Total number of user retrievals
+- `create_user_count` - Number of create user API calls
+- `get_users_count` - Number of get all users API calls
 
-- `translate(englishText)` - Translates a single English text to Bengali
-- `translateBatch(englishTexts)` - Translates an array of English texts
+### Timers
+- `get_users_duration` - Time taken to get all users
+- `get_user_by_id_duration` - Time taken to get user by ID
+- `create_user_duration` - Time taken to create a user
+- `update_user_duration` - Time taken to update a user
+- `delete_user_duration` - Time taken to delete a user
+- `slow_endpoint_duration` - Time taken for slow endpoint
 
-#### Parameters
+### Gauges
+- `users_total` - Current total number of users in the system
 
-- `englishText` (string) - The English text to translate
-- `englishTexts` (array) - Array of English texts for batch translation
+## Setting Up Grafana Dashboard
 
-#### Returns
+1. **Access Grafana**: http://localhost:3000 (admin/admin)
+2. **Add Prometheus Data Source**: 
+   - URL: `http://localhost:9090`
+   - Click "Save & Test"
+3. **Create Dashboard**:
+   - Click "+" → "Dashboard" → "Add visualization"
+   - Select "Prometheus" data source
+   - Use metrics like: `users_total`, `users_created_total`, `http_server_requests_seconds_count`
 
-- Single translation: Bengali string
-- Batch translation: Array of objects with `original`, `translation`, and optional `error` fields
+## Sample Grafana Queries
 
-## Requirements
+```promql
+# Current user count
+users_total
 
-- Node.js 14+
-- OpenAI API key
-- Internet connection
+# Users created over time
+rate(users_created_total[5m])
 
-## Notes
+# API request rate
+rate(http_server_requests_seconds_count[5m])
 
-- The translator uses GPT-4 for high accuracy
-- Maintains cultural context and proper Bengali grammar
-- Handles both formal and informal translations appropriately
-- Supports Bengali script (বাংলা) output
+# Response time percentiles
+histogram_quantile(0.95, rate(http_server_requests_seconds_bucket[5m]))
 
-## Error Handling
+# JVM memory usage
+jvm_memory_used_bytes{area="heap"}
+```
 
-The translator includes comprehensive error handling for:
-- Network connectivity issues
-- API rate limits
-- Invalid input text
-- Authentication errors
+## Generate Load for Testing
+```bash
+# Create multiple users
+for i in {1..10}; do
+  curl -X POST http://localhost:8080/api/users \
+    -H "Content-Type: application/json" \
+    -d "{\"name\":\"User $i\",\"email\":\"user$i@example.com\",\"department\":\"Test\"}"
+done
+
+# Generate traffic
+for i in {1..100}; do
+  curl http://localhost:8080/api/users
+  curl http://localhost:8080/api/users/1
+done
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Port conflicts**: Make sure ports 8080, 9090, and 3000 are available
+2. **Metrics not showing in Grafana**: 
+   - Check if Prometheus is scraping: http://localhost:9090/targets
+   - Verify Spring Boot metrics: http://localhost:8080/actuator/prometheus
+3. **Database connection**: Use H2 console at http://localhost:8080/h2-console
+
+### Useful Commands
+```bash
+# Check if services are running
+curl http://localhost:8080/actuator/health
+curl http://localhost:9090/api/v1/targets
+curl http://localhost:3000/api/health
+
+# View specific metrics
+curl http://localhost:8080/actuator/prometheus | grep users_
+
+# Stop services
+pkill prometheus
+brew services stop grafana
+```
+
+## Project Structure
+
+```
+├── src/main/java/com/example/metricsdemo/
+│   ├── MetricsDemoApplication.java      # Main application
+│   ├── controller/UserController.java   # REST API with metrics
+│   ├── model/User.java                  # User entity
+│   ├── repository/UserRepository.java   # JPA repository
+│   ├── service/UserService.java         # Business logic with metrics
+│   └── config/DataInitializer.java      # Sample data loader
+├── src/main/resources/
+│   └── application.yml                  # Spring Boot configuration
+├── prometheus/
+│   └── prometheus.yml                   # Prometheus configuration
+├── grafana/                            # Grafana configuration (for Docker)
+├── pom.xml                             # Maven dependencies
+└── README.md                           # This file
+```
+
+## Monitoring Best Practices
+
+1. **Use appropriate metric types**:
+   - Counters for things that only increase
+   - Gauges for values that can go up and down
+   - Timers for measuring duration
+
+2. **Add meaningful labels** to metrics for better filtering
+
+3. **Set up alerts** in Grafana for critical metrics
+
+4. **Monitor key business metrics** alongside technical metrics
+
+This project demonstrates a complete monitoring setup for Spring Boot applications using industry-standard tools.

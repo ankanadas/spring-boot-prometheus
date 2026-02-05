@@ -1,5 +1,6 @@
 package com.example.metricsdemo.controller;
 
+import com.example.metricsdemo.dto.PagedResponse;
 import com.example.metricsdemo.model.User;
 import com.example.metricsdemo.service.UserService;
 import io.micrometer.core.annotation.Counted;
@@ -7,6 +8,7 @@ import io.micrometer.core.annotation.Timed;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,13 +39,38 @@ public class UserController {
     @GetMapping
     @Timed(value = "get_users_duration", description = "Time taken to get all users")
     @Counted(value = "get_users_count", description = "Number of times get all users is called")
-    public List<User> getAllUsers() {
+    public List<User> getAllUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size) {
         userRetrievalCounter.increment();
         
         // Simulate some processing time
         simulateProcessingTime();
         
-        return userService.getAllUsers();
+        return userService.getAllUsers(page, size);
+    }
+
+    @GetMapping("/paged")
+    @Timed(value = "get_users_paged_duration", description = "Time taken to get paginated users")
+    public ResponseEntity<PagedResponse<User>> getAllUsersPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size) {
+        userRetrievalCounter.increment();
+        
+        // Simulate some processing time
+        simulateProcessingTime();
+        
+        Page<User> userPage = userService.getAllUsersPaged(page, size);
+        
+        PagedResponse<User> response = new PagedResponse<>(
+            userPage.getContent(),
+            userPage.getNumber(),
+            userPage.getSize(),
+            userPage.getTotalElements(),
+            userPage.getTotalPages()
+        );
+        
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
@@ -55,10 +82,7 @@ public class UserController {
         simulateProcessingTime();
         
         User user = userService.getUserById(id);
-        if (user != null) {
-            return ResponseEntity.ok(user);
-        }
-        return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(user);
     }
 
     @PostMapping
@@ -80,10 +104,7 @@ public class UserController {
         simulateProcessingTime();
         
         User updatedUser = userService.updateUser(id, userDetails);
-        if (updatedUser != null) {
-            return ResponseEntity.ok(updatedUser);
-        }
-        return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(updatedUser);
     }
 
     @DeleteMapping("/{id}")
@@ -92,11 +113,8 @@ public class UserController {
         // Simulate some processing time
         simulateProcessingTime();
         
-        boolean deleted = userService.deleteUser(id);
-        if (deleted) {
-            return ResponseEntity.ok().build();
-        }
-        return ResponseEntity.notFound().build();
+        userService.deleteUser(id);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/health")

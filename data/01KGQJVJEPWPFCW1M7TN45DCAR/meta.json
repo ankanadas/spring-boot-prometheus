@@ -1,0 +1,18 @@
+{
+	"ulid": "01KGQJVJEPWPFCW1M7TN45DCAR",
+	"minTime": 1770307254708,
+	"maxTime": 1770314400000,
+	"stats": {
+		"numSamples": 921738,
+		"numFloatSamples": 921738,
+		"numSeries": 1833,
+		"numChunks": 7843
+	},
+	"compaction": {
+		"level": 1,
+		"sources": [
+			"01KGQJVJEPWPFCW1M7TN45DCAR"
+		]
+	},
+	"version": 1
+}

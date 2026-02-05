@@ -1,5 +1,6 @@
 package com.example.metricsdemo.service;
 
+import com.example.metricsdemo.exception.UserNotFoundException;
 import com.example.metricsdemo.model.User;
 import com.example.metricsdemo.repository.UserRepository;
 import io.micrometer.core.instrument.Gauge;
@@ -7,6 +8,9 @@ import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -36,6 +40,17 @@ public class UserService {
         return userRepository.findAll();
     }
 
+    public List<User> getAllUsers(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<User> userPage = userRepository.findAll(pageable);
+        return userPage.getContent();
+    }
+
+    public Page<User> getAllUsersPaged(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return userRepository.findAll(pageable);
+    }
+
     public User getUserById(Long id) {
         // Try to get from cache first
         User cachedUser = userCacheService.getCachedUser(id);
@@ -51,7 +66,9 @@ public class UserService {
             userCacheService.cacheUser(user.get());
             return user.get();
         }
-        return null;
+        
+        // User not found - throw exception
+        throw new UserNotFoundException(id);
     }
 
     public User createUser(User user) {
@@ -74,7 +91,9 @@ public class UserService {
             userCacheService.cacheUser(updatedUser);
             return updatedUser;
         }
-        return null;
+        
+        // User not found - throw exception
+        throw new UserNotFoundException(id);
     }
 
     public boolean deleteUser(Long id) {
@@ -84,7 +103,9 @@ public class UserService {
             userCacheService.evictUser(id);
             return true;
         }
-        return false;
+        
+        // User not found - throw exception
+        throw new UserNotFoundException(id);
     }
 
     public double getUserCount() {

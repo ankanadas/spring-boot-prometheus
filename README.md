@@ -80,7 +80,8 @@ grafana-server --config=/usr/local/etc/grafana/grafana.ini --homepath /usr/local
 ## API Endpoints
 
 ### User Management
-- `GET /api/users` - Get all users
+- `GET /api/users` - Get all users (supports pagination with `?page=0&size=10`)
+- `GET /api/users/paged` - Get users with pagination metadata
 - `GET /api/users/{id}` - Get user by ID
 - `POST /api/users` - Create new user
 - `PUT /api/users/{id}` - Update user
@@ -109,6 +110,33 @@ curl -X POST http://localhost:8080/api/users \
 ### Get All Users
 ```bash
 curl http://localhost:8080/api/users
+```
+
+### Get Users with Pagination
+```bash
+# Get first page (default: page=0, size=10)
+curl http://localhost:8080/api/users
+
+# Get second page with 5 users per page
+curl "http://localhost:8080/api/users?page=1&size=5"
+
+# Get third page with 3 users per page
+curl "http://localhost:8080/api/users?page=2&size=3"
+```
+
+### Get Users with Pagination Metadata
+```bash
+# Get paginated response with full metadata
+curl "http://localhost:8080/api/users/paged?page=0&size=5"
+
+# Response includes:
+# - content: array of users
+# - page: current page number
+# - size: page size
+# - totalElements: total number of users
+# - totalPages: total number of pages
+# - first: boolean (is first page)
+# - last: boolean (is last page)
 ```
 
 ### Test Slow Endpoint
@@ -141,17 +169,73 @@ The application exposes several custom metrics:
 
 ## Setting Up Grafana Dashboard
 
-1. **Access Grafana**: http://localhost:3000 (admin/admin)
-2. **Add Prometheus Data Source**: 
-   - URL: `http://localhost:9090`
-   - Click "Save & Test"
-3. **Add Loki Data Source**:
-   - URL: `http://localhost:3100`
-   - Click "Save & Test"
-4. **Create Dashboard**:
-   - Click "+" → "Dashboard" → "Add visualization"
-   - Select "Prometheus" data source for metrics
-   - Select "Loki" data source for logs
+### 1. Access Grafana
+Go to http://localhost:3000 (default credentials: admin/admin)
+
+### 2. Add Data Sources
+
+#### Add Prometheus Data Source:
+1. Click **⚙️ (Configuration)** → **Data sources**
+2. Click **"Add data source"**
+3. Select **"Prometheus"**
+4. Set URL: `http://localhost:9090`
+5. Click **"Save & test"** (should show green success message)
+
+#### Add Loki Data Source:
+1. Click **"Add data source"** again
+2. Select **"Loki"**
+3. Set URL: `http://localhost:3100`
+4. Click **"Save & test"** (should show green success message)
+
+### 3. Import Cache Performance Dashboard
+
+#### Option A: Manual Import (Recommended)
+1. Click **"+"** (Create) → **"Import"** in the left sidebar
+2. Click **"Upload JSON file"**
+3. Navigate to and select: `grafana/dashboards/cache-performance-dashboard.json`
+4. In the import screen:
+   - Select **"Prometheus"** as the data source
+   - Click **"Import"**
+5. The dashboard will open automatically
+
+#### Option B: Copy-Paste JSON
+1. Click **"+"** → **"Import"**
+2. Open `grafana/dashboards/cache-performance-dashboard.json` in a text editor
+3. Copy the entire JSON content
+4. Paste into the **"Import via panel json"** text box
+5. Click **"Load"**
+6. Select **"Prometheus"** as the data source
+7. Click **"Import"**
+
+### 4. View the Dashboard
+
+The **Redis Cache Performance Dashboard** includes:
+- **Cache Hit Ratio Over Time** - Trending cache efficiency
+- **Current Cache Hit Ratio Gauge** - Real-time performance indicator
+- **Cache Hits/Misses Stats** - Total counts
+- **Cache Hit/Miss Rate** - Per-second activity
+- **Cache Distribution Pie Chart** - Visual breakdown
+- **API Activity Rate** - Overall system activity
+- **Error Tracking** - 404 and other errors
+
+### 5. Generate Test Data
+
+To see the dashboard in action:
+```bash
+# Clear cache to start fresh
+redis-cli FLUSHALL
+
+# Generate cache misses (first calls)
+for i in {1..5}; do curl http://localhost:8080/api/users/$i; done
+
+# Generate cache hits (second calls)  
+for i in {1..5}; do curl http://localhost:8080/api/users/$i; done
+
+# Generate some 404 errors
+for i in {100..105}; do curl http://localhost:8080/api/users/$i; done
+```
+
+The dashboard auto-refreshes every 5 seconds and shows the last 15 minutes of data.
 
 ## Redis Caching Workflow
 

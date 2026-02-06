@@ -58,3 +58,4 @@ Thumbs.db
 ### Application Configuration ###
 # Uncomment to exclude application.yml with credentials
 # src/main/resources/application.yml
+.env

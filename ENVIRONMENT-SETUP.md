@@ -16,8 +16,8 @@ Environment variables keep sensitive data (passwords, API keys) out of your code
 2. **Edit `.env` with your actual values**:
    ```bash
    # .env
-   DB_USERNAME=userapp
-   DB_PASSWORD=your_actual_password
+   DB_USERNAME=your_db_username
+   DB_PASSWORD=your_db_password
    ```
 
 3. **Run the application**:
@@ -30,8 +30,8 @@ Environment variables keep sensitive data (passwords, API keys) out of your code
 ### Method 2: Export in Terminal (Temporary - Current Session Only)
 
 ```bash
-export DB_USERNAME=userapp
-export DB_PASSWORD=password123
+export DB_USERNAME=your_db_username
+export DB_PASSWORD=your_db_password
 
 # Then run the app
 ./mvnw spring-boot:run
@@ -46,8 +46,8 @@ export DB_PASSWORD=password123
 nano ~/.zshrc
 
 # Add these lines at the end:
-export DB_USERNAME=userapp
-export DB_PASSWORD=password123
+export DB_USERNAME=your_db_username
+export DB_PASSWORD=your_db_password
 
 # Save and reload
 source ~/.zshrc
@@ -69,7 +69,7 @@ source ~/.bash_profile
 1. Open **Run/Debug Configurations**
 2. Add **Environment Variables**:
    ```
-   DB_USERNAME=userapp;DB_PASSWORD=password123
+   DB_USERNAME=your_db_username;DB_PASSWORD=your_db_password
    ```
 
 ### Method 5: Docker / Production
@@ -79,7 +79,7 @@ source ~/.bash_profile
 services:
   app:
     environment:
-      - DB_USERNAME=userapp
+      - DB_USERNAME=your_db_username
       - DB_PASSWORD=${DB_PASSWORD}
 ```
 
@@ -91,21 +91,21 @@ metadata:
   name: db-credentials
 type: Opaque
 data:
-  username: dXNlcmFwcA==  # base64 encoded
-  password: cGFzc3dvcmQxMjM=  # base64 encoded
+  username: <base64-encoded-username>
+  password: <base64-encoded-password>
 ```
 
 ## How It Works
 
 **application.yml** uses this syntax:
 ```yaml
-username: ${DB_USERNAME:userapp}
-password: ${DB_PASSWORD:password}
+username: ${DB_USERNAME:default_username}
+password: ${DB_PASSWORD:default_password}
 ```
 
-- `${DB_USERNAME:userapp}` means:
+- `${DB_USERNAME:default_username}` means:
   - Use environment variable `DB_USERNAME` if it exists
-  - Otherwise, use default value `userapp`
+  - Otherwise, use default value `default_username`
 
 ## Verify Environment Variables
 
@@ -156,8 +156,8 @@ nano .env
 
 **Manually set and test:**
 ```bash
-export DB_USERNAME=userapp
-export DB_PASSWORD=password123
+export DB_USERNAME=your_db_username
+export DB_PASSWORD=your_db_password
 ./mvnw spring-boot:run
 ```
 

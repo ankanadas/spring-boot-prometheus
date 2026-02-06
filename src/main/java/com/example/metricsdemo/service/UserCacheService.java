@@ -36,20 +36,31 @@ public class UserCacheService {
     }
 
     public void cacheUser(User user) {
-        String key = USER_CACHE_PREFIX + user.getId();
-        redisTemplate.opsForValue().set(key, user, CACHE_TTL_HOURS, TimeUnit.HOURS);
+        try {
+            String key = USER_CACHE_PREFIX + user.getId();
+            redisTemplate.opsForValue().set(key, user, CACHE_TTL_HOURS, TimeUnit.HOURS);
+            logger.info("Successfully cached user {} in Redis with key: {}", user.getId(), key);
+        } catch (Exception e) {
+            logger.error("Failed to cache user {} in Redis: {}", user.getId(), e.getMessage(), e);
+        }
     }
 
     public User getCachedUser(Long userId) {
-        String key = USER_CACHE_PREFIX + userId;
-        User cachedUser = (User) redisTemplate.opsForValue().get(key);
-        
-        if (cachedUser != null) {
-            logger.info("Cache HIT - Fetching user {} from Redis", userId);
-            cacheHitCounter.increment();
-            return cachedUser;
-        } else {
-            logger.info("Cache MISS - User {} not found in Redis", userId);
+        try {
+            String key = USER_CACHE_PREFIX + userId;
+            User cachedUser = (User) redisTemplate.opsForValue().get(key);
+            
+            if (cachedUser != null) {
+                logger.info("Cache HIT - Fetching user {} from Redis", userId);
+                cacheHitCounter.increment();
+                return cachedUser;
+            } else {
+                logger.info("Cache MISS - User {} not found in Redis", userId);
+                cacheMissCounter.increment();
+                return null;
+            }
+        } catch (Exception e) {
+            logger.error("Error getting user {} from Redis cache: {}", userId, e.getMessage(), e);
             cacheMissCounter.increment();
             return null;
         }

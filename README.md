@@ -5,11 +5,13 @@ A complete Spring Boot application with Prometheus metrics, Grafana dashboards, 
 ## Features
 
 - **Spring Boot REST API** with User CRUD operations
+- **Elasticsearch fuzzy search** with typo tolerance for intelligent searching
 - **Redis caching** with 24-hour TTL for improved performance
 - **Prometheus metrics** integration with custom counters, timers, and gauges
 - **Grafana dashboards** for visualization
 - **Loki log aggregation** with Promtail for centralized logging
-- **H2 in-memory database** with sample data
+- **PostgreSQL database** with Department entity and foreign key relationships
+- **Swagger/OpenAPI** documentation for all endpoints
 - **Custom business metrics** for monitoring user operations and cache performance
 
 ## Architecture
@@ -23,31 +25,52 @@ A complete Spring Boot application with Prometheus metrics, Grafana dashboards, 
          │                                             ▲
          ▼                                             │
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│     Redis       │    │   Promtail      │───▶│      Loki       │
-│   (Caching)     │    │ (Log Collector) │    │   (Logs)        │
-│   Port: 6379    │    │   Port: 9080    │    │   Port: 3100    │
+│   PostgreSQL    │    │   Promtail      │───▶│      Loki       │
+│   (Database)    │    │ (Log Collector) │    │   (Logs)        │
+│   Port: 5432    │    │   Port: 9080    │    │   Port: 3100    │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
+         │
+         ▼
+┌─────────────────┐    ┌─────────────────┐
+│     Redis       │    │ Elasticsearch   │
+│   (Caching)     │    │ (Fuzzy Search)  │
+│   Port: 6379    │    │   Port: 9200    │
+└─────────────────┘    └─────────────────┘
 ```
 
 ## Quick Start
 
 ### Prerequisites
 - Java 17+ (you have Java 21 ✅)
-- Homebrew (for installing Prometheus, Grafana, Redis, Loki, and Promtail)
+- Homebrew (for installing services)
+- PostgreSQL 15
+- Redis
+- Elasticsearch
+
+### Easy Start (All Services)
+```bash
+# Start all monitoring services
+./start-all.sh
+
+# Start the Spring Boot application
+./run-app.sh
+```
 
 ### Step 1: Start Spring Boot Application
 ```bash
 # Build and run the application
-./mvnw clean package -DskipTests
-java -jar target/metrics-demo-0.0.1-SNAPSHOT.jar
+./run-app.sh
 ```
 
 ### Step 2: Install and Start All Services
 ```bash
 # Install all monitoring tools
 brew install prometheus grafana redis loki promtail
+brew tap elastic/tap
+brew install elastic/tap/elasticsearch-full
 
-# Start Redis
+# Start all services
+./start-all.sh
 brew services start redis
 
 # Start Prometheus (in new terminal)
@@ -501,3 +524,7 @@ spring-boot-prometheus/
 6. **Monitor key business metrics** alongside technical metrics
 
 This project demonstrates a complete observability stack for Spring Boot applications using industry-standard tools including metrics, logging, and caching.
+
+7. Commands:
+./start-all.sh  # Starts Elasticsearch + Prometheus
+./run-app.sh    # Starts Spring Boot app

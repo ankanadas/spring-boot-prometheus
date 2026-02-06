@@ -102,12 +102,12 @@ public class UserController {
 
     @GetMapping("/search")
     @Timed(value = "search_users_duration", description = "Time taken to search users")
-    @Operation(summary = "Search users", description = "Search users by name, email, or department")
+    @Operation(summary = "Search users with fuzzy matching", description = "Search users by name, email, or department with typo tolerance using Elasticsearch")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved search results")
     })
     public ResponseEntity<PagedResponse<User>> searchUsers(
-            @Parameter(description = "Search query string") @RequestParam String query,
+            @Parameter(description = "Search query string (handles typos)") @RequestParam String query,
             @Parameter(description = "Page number (0-indexed)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Number of users per page") @RequestParam(defaultValue = "5") int size) {
         userRetrievalCounter.increment();
@@ -115,7 +115,8 @@ public class UserController {
         // Simulate some processing time
         simulateProcessingTime();
         
-        Page<User> userPage = userService.searchUsers(query, page, size);
+        // Use Elasticsearch fuzzy search
+        Page<User> userPage = userService.fuzzySearchUsersAsUsers(query, page, size);
         
         PagedResponse<User> response = new PagedResponse<>(
             userPage.getContent(),
@@ -248,5 +249,29 @@ public class UserController {
     @ApiResponse(responseCode = "200", description = "Successfully retrieved departments")
     public ResponseEntity<?> getAllDepartments() {
         return ResponseEntity.ok(userService.getAllDepartments());
+    }
+    
+    @GetMapping("/fuzzy-search")
+    @Timed(value = "fuzzy_search_users_duration", description = "Time taken for fuzzy search")
+    @Operation(summary = "Fuzzy search users", description = "Search users with typo tolerance using Elasticsearch")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved fuzzy search results")
+    })
+    public ResponseEntity<?> fuzzySearchUsers(
+            @Parameter(description = "Search query (handles typos)") @RequestParam String query,
+            @Parameter(description = "Page number (0-indexed)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Number of users per page") @RequestParam(defaultValue = "5") int size) {
+        userRetrievalCounter.increment();
+        simulateProcessingTime();
+        
+        return ResponseEntity.ok(userService.fuzzySearchUsers(query, page, size));
+    }
+    
+    @PostMapping("/reindex")
+    @Operation(summary = "Reindex all users", description = "Reindex all users in Elasticsearch for fuzzy search")
+    @ApiResponse(responseCode = "200", description = "Reindexing completed")
+    public ResponseEntity<String> reindexUsers() {
+        long count = userService.reindexAllUsers();
+        return ResponseEntity.ok("Reindexed " + count + " users in Elasticsearch");
     }
 }

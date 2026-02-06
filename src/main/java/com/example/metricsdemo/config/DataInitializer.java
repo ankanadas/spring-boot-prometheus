@@ -4,6 +4,7 @@ import com.example.metricsdemo.model.Department;
 import com.example.metricsdemo.model.User;
 import com.example.metricsdemo.repository.DepartmentRepository;
 import com.example.metricsdemo.repository.UserRepository;
+import com.example.metricsdemo.service.UserSearchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,9 @@ public class DataInitializer implements CommandLineRunner {
     
     @Autowired
     private DepartmentRepository departmentRepository;
+    
+    @Autowired
+    private UserSearchService userSearchService;
 
     @Override
     public void run(String... args) throws Exception {
@@ -70,5 +74,10 @@ public class DataInitializer implements CommandLineRunner {
         long finalDeptCount = departmentRepository.count();
         logger.info("✅ Sample data initialized successfully: {} users and {} departments created", 
             finalUserCount, finalDeptCount);
+        
+        // Index all users in Elasticsearch
+        logger.info("Indexing users in Elasticsearch...");
+        userSearchService.reindexAll(userRepository.findAll());
+        logger.info("✅ Elasticsearch indexing complete");
     }
 }

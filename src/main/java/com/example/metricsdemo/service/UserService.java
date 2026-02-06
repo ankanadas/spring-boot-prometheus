@@ -31,6 +31,9 @@ public class UserService {
     
     @Autowired
     private UserCacheService userCacheService;
+    
+    @Autowired
+    private UserSearchService userSearchService;
 
     public UserService(UserRepository userRepository, MeterRegistry meterRegistry) {
         this.userRepository = userRepository;
@@ -85,6 +88,8 @@ public class UserService {
         User savedUser = userRepository.save(user);
         // Cache the newly created user
         userCacheService.cacheUser(savedUser);
+        // Index in Elasticsearch
+        userSearchService.indexUser(savedUser);
         return savedUser;
     }
 
@@ -111,6 +116,9 @@ public class UserService {
             userCacheService.cacheUser(updatedUser);
             logger.info("Updated user {} cached in Redis", id);
             
+            // Update Elasticsearch index
+            userSearchService.indexUser(updatedUser);
+            
             return updatedUser;
         }
         
@@ -132,6 +140,9 @@ public class UserService {
             userCacheService.evictUser(id);
             logger.info("User {} evicted from Redis cache", id);
             
+            // Remove from Elasticsearch
+            userSearchService.deleteUser(id);
+            
             return true;
         }
         
@@ -151,5 +162,34 @@ public class UserService {
     
     public List<Department> getAllDepartments() {
         return departmentRepository.findAll();
+    }
+    
+    public Page<?> fuzzySearchUsers(String searchTerm, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return userSearchService.fuzzySearch(searchTerm, pageable);
+    }
+    
+    public Page<User> fuzzySearchUsersAsUsers(String searchTerm, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<com.example.metricsdemo.document.UserDocument> searchResults = 
+            userSearchService.fuzzySearch(searchTerm, pageable);
+        
+        // Convert UserDocument to User entities with full data from database
+        List<User> users = searchResults.getContent().stream()
+            .map(doc -> userRepository.findById(doc.getId()).orElse(null))
+            .filter(user -> user != null)
+            .toList();
+        
+        return new org.springframework.data.domain.PageImpl<>(
+            users,
+            pageable,
+            searchResults.getTotalElements()
+        );
+    }
+    
+    public long reindexAllUsers() {
+        List<User> allUsers = userRepository.findAll();
+        userSearchService.reindexAll(allUsers);
+        return allUsers.size();
     }
 }

@@ -38,6 +38,9 @@ spring:
           max-active: 8
           max-idle: 8
           min-idle: 0
+  
+  elasticsearch:
+    uris: http://localhost:9200
 
 management:
   endpoints:

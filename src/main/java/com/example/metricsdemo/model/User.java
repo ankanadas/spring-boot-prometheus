@@ -3,7 +3,7 @@ package com.example.metricsdemo.model;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "users")
+@Table(name = "users", schema = "userschema")
 public class User {
     
     @Id
@@ -16,12 +16,14 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
     
-    private String department;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "department_id", nullable = false)
+    private Department department;
     
     // Constructors
     public User() {}
     
-    public User(String name, String email, String department) {
+    public User(String name, String email, Department department) {
         this.name = name;
         this.email = email;
         this.department = department;
@@ -52,11 +54,11 @@ public class User {
         this.email = email;
     }
     
-    public String getDepartment() {
+    public Department getDepartment() {
         return department;
     }
     
-    public void setDepartment(String department) {
+    public void setDepartment(Department department) {
         this.department = department;
     }
     
@@ -66,7 +68,7 @@ public class User {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", email='" + email + '\'' +
-                ", department='" + department + '\'' +
+                ", department=" + (department != null ? department.getName() : "null") +
                 '}';
     }
 }

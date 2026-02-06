@@ -242,4 +242,11 @@ public class UserController {
             Thread.currentThread().interrupt();
         }
     }
+
+    @GetMapping("/departments")
+    @Operation(summary = "Get all departments", description = "Retrieve list of all departments")
+    @ApiResponse(responseCode = "200", description = "Successfully retrieved departments")
+    public ResponseEntity<?> getAllDepartments() {
+        return ResponseEntity.ok(userService.getAllDepartments());
+    }
 }

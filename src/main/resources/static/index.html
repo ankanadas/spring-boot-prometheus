@@ -73,7 +73,8 @@
 
         input[type="text"],
         input[type="email"],
-        input[type="number"] {
+        input[type="number"],
+        select.form-select {
             width: 100%;
             padding: 12px;
             border: 2px solid #ddd;
@@ -84,7 +85,8 @@
 
         input[type="text"]:focus,
         input[type="email"]:focus,
-        input[type="number"]:focus {
+        input[type="number"]:focus,
+        select.form-select:focus {
             outline: none;
             border-color: #88d8b0;
         }
@@ -452,7 +454,9 @@
                     </div>
                     <div class="form-group">
                         <label for="department">Department *</label>
-                        <input type="text" id="department" name="department" required placeholder="e.g., Engineering, Marketing">
+                        <select id="department" name="department" required class="form-select">
+                            <option value="">-- Select Department --</option>
+                        </select>
                     </div>
                     <button type="submit" class="btn btn-primary">Add User</button>
                     <button type="reset" class="btn btn-secondary">Clear</button>
@@ -535,7 +539,9 @@
                 </div>
                 <div class="form-group">
                     <label for="editDepartment">Department *</label>
-                    <input type="text" id="editDepartment" name="department" required>
+                    <select id="editDepartment" name="department" required class="form-select">
+                        <option value="">-- Select Department --</option>
+                    </select>
                 </div>
                 <button type="submit" class="btn btn-primary">Update User</button>
                 <button type="button" onclick="closeEditModal()" class="btn btn-secondary">Cancel</button>
@@ -551,20 +557,66 @@
         let currentSortField = '';
         let currentSortDirection = 'asc';
         let isSearchById = false;
+        let departments = [];
 
         // Load users on page load
         window.onload = function() {
+            loadDepartments();
             loadUsers();
         };
+
+        // Load departments from API
+        async function loadDepartments() {
+            try {
+                const response = await fetch('/api/users/departments');
+                departments = await response.json();
+                populateDepartmentDropdowns();
+            } catch (error) {
+                console.error('Failed to load departments:', error);
+                showMessage('error', 'Failed to load departments');
+            }
+        }
+
+        // Populate department dropdowns
+        function populateDepartmentDropdowns() {
+            const addDeptSelect = document.getElementById('department');
+            const editDeptSelect = document.getElementById('editDepartment');
+            
+            // Clear existing options (except the first one)
+            addDeptSelect.innerHTML = '<option value="">-- Select Department --</option>';
+            editDeptSelect.innerHTML = '<option value="">-- Select Department --</option>';
+            
+            // Add department options
+            departments.forEach(dept => {
+                const option1 = document.createElement('option');
+                option1.value = dept.id;
+                option1.textContent = dept.name;
+                addDeptSelect.appendChild(option1);
+                
+                const option2 = document.createElement('option');
+                option2.value = dept.id;
+                option2.textContent = dept.name;
+                editDeptSelect.appendChild(option2);
+            });
+        }
 
         // Add user form submission
         document.getElementById('addUserForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
+            const departmentId = document.getElementById('department').value;
+            
+            if (!departmentId) {
+                showMessage('error', 'Please select a department');
+                return;
+            }
+            
             const user = {
                 name: document.getElementById('name').value,
                 email: document.getElementById('email').value,
-                department: document.getElementById('department').value
+                department: {
+                    id: parseInt(departmentId)
+                }
             };
 
             try {
@@ -637,14 +689,16 @@
             users.forEach(user => {
                 const row = document.createElement('tr');
                 const badgeClass = getBadgeClass(user.department);
+                const deptName = typeof user.department === 'object' ? user.department.name : user.department;
+                const deptId = typeof user.department === 'object' ? user.department.id : null;
                 
                 row.innerHTML = `
                     <td>${user.id}</td>
                     <td><strong>${user.name}</strong></td>
                     <td>${user.email}</td>
-                    <td><span class="badge ${badgeClass}">${user.department}</span></td>
+                    <td><span class="badge ${badgeClass}">${deptName}</span></td>
                     <td>
-                        <button class="btn-small btn-edit" onclick="openEditModal(${user.id}, '${escapeHtml(user.name)}', '${escapeHtml(user.email)}', '${escapeHtml(user.department)}')">Edit</button>
+                        <button class="btn-small btn-edit" onclick="openEditModal(${user.id}, '${escapeHtml(user.name)}', '${escapeHtml(user.email)}', ${deptId}, '${escapeHtml(deptName)}')">Edit</button>
                         <button class="btn-small btn-delete" onclick="deleteUser(${user.id})">Delete</button>
                     </td>
                 `;
@@ -659,7 +713,9 @@
 
         // Get badge class based on department
         function getBadgeClass(department) {
-            const dept = department.toLowerCase();
+            // Handle department object or string
+            const deptName = typeof department === 'object' ? department.name : department;
+            const dept = deptName.toLowerCase();
             if (dept.includes('engineering')) return 'badge-engineering';
             if (dept.includes('marketing')) return 'badge-marketing';
             if (dept.includes('sales')) return 'badge-sales';
@@ -819,8 +875,15 @@
         // Sort users array locally
         function sortUsersLocally(users, field, direction) {
             users.sort((a, b) => {
-                let aVal = a[field].toLowerCase();
-                let bVal = b[field].toLowerCase();
+                let aVal, bVal;
+                
+                if (field === 'department') {
+                    aVal = (typeof a.department === 'object' ? a.department.name : a.department).toLowerCase();
+                    bVal = (typeof b.department === 'object' ? b.department.name : b.department).toLowerCase();
+                } else {
+                    aVal = a[field].toLowerCase();
+                    bVal = b[field].toLowerCase();
+                }
                 
                 if (direction === 'asc') {
                     return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
@@ -872,11 +935,11 @@
         });
 
         // Open edit modal
-        function openEditModal(id, name, email, department) {
+        function openEditModal(id, name, email, departmentId, departmentName) {
             document.getElementById('editUserId').value = id;
             document.getElementById('editName').value = name;
             document.getElementById('editEmail').value = email;
-            document.getElementById('editDepartment').value = department;
+            document.getElementById('editDepartment').value = departmentId;
             document.getElementById('editModal').style.display = 'block';
         }
 
@@ -891,10 +954,19 @@
             e.preventDefault();
             
             const userId = document.getElementById('editUserId').value;
+            const departmentId = document.getElementById('editDepartment').value;
+            
+            if (!departmentId) {
+                showMessage('error', 'Please select a department');
+                return;
+            }
+            
             const user = {
                 name: document.getElementById('editName').value,
                 email: document.getElementById('editEmail').value,
-                department: document.getElementById('editDepartment').value
+                department: {
+                    id: parseInt(departmentId)
+                }
             };
 
             try {

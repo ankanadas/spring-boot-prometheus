@@ -1,7 +1,9 @@
 package com.example.metricsdemo.service;
 
 import com.example.metricsdemo.exception.UserNotFoundException;
+import com.example.metricsdemo.model.Department;
 import com.example.metricsdemo.model.User;
+import com.example.metricsdemo.repository.DepartmentRepository;
 import com.example.metricsdemo.repository.UserRepository;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -23,6 +25,9 @@ public class UserService {
 
     @Autowired
     private UserRepository userRepository;
+    
+    @Autowired
+    private DepartmentRepository departmentRepository;
     
     @Autowired
     private UserCacheService userCacheService;
@@ -64,7 +69,7 @@ public class UserService {
         }
         
         // If not in cache, get from database
-        logger.info("Fetching user {} from H2 database", id);
+        logger.info("Fetching user {} from PostgreSQL database", id);
         Optional<User> user = userRepository.findById(id);
         if (user.isPresent()) {
             // Cache the user for future requests
@@ -90,7 +95,7 @@ public class UserService {
             User user = optionalUser.get();
             String oldName = user.getName();
             String oldEmail = user.getEmail();
-            String oldDepartment = user.getDepartment();
+            String oldDepartment = user.getDepartment() != null ? user.getDepartment().getName() : "null";
             
             user.setName(userDetails.getName());
             user.setEmail(userDetails.getEmail());
@@ -99,7 +104,8 @@ public class UserService {
             
             logger.info("User updated successfully - ID: {}, Old: [name={}, email={}, dept={}], New: [name={}, email={}, dept={}]", 
                 id, oldName, oldEmail, oldDepartment, 
-                updatedUser.getName(), updatedUser.getEmail(), updatedUser.getDepartment());
+                updatedUser.getName(), updatedUser.getEmail(), 
+                updatedUser.getDepartment() != null ? updatedUser.getDepartment().getName() : "null");
             
             // Update cache with new user data
             userCacheService.cacheUser(updatedUser);
@@ -136,5 +142,14 @@ public class UserService {
 
     public double getUserCount() {
         return userRepository.count();
+    }
+    
+    public Department getDepartmentById(Long id) {
+        return departmentRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Department not found with id: " + id));
+    }
+    
+    public List<Department> getAllDepartments() {
+        return departmentRepository.findAll();
     }
 }

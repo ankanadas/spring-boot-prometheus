@@ -55,3 +55,6 @@ prometheus/data/
 ### OS ###
 .DS_Store
 Thumbs.db
+### Application Configuration ###
+# Uncomment to exclude application.yml with credentials
+# src/main/resources/application.yml

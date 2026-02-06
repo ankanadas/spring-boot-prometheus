@@ -1,0 +1,40 @@
+groups:
+  - name: cache_metrics
+    interval: 10s
+    rules:
+      # Record cumulative cache hits
+      - record: cache:hits:total
+        expr: user_cache_hits_total
+      
+      # Record cumulative cache misses
+      - record: cache:misses:total
+        expr: user_cache_misses_total
+      
+      # Record cache hit ratio
+      - record: cache:hit_ratio
+        expr: |
+          rate(user_cache_hits_total[5m]) / 
+          (rate(user_cache_hits_total[5m]) + rate(user_cache_misses_total[5m]))
+      
+      # Record total cache operations
+      - record: cache:operations:total
+        expr: user_cache_hits_total + user_cache_misses_total
+
+  - name: user_metrics
+    interval: 10s
+    rules:
+      # Record total users created
+      - record: users:created:total
+        expr: users_created_total
+      
+      # Record total users updated
+      - record: users:updated:total
+        expr: users_updated_total
+      
+      # Record total users deleted
+      - record: users:deleted:total
+        expr: users_deleted_total
+      
+      # Record user creation rate
+      - record: users:created:rate
+        expr: rate(users_created_total[5m])

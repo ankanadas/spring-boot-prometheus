@@ -1,10 +1,8 @@
 package com.example.metricsdemo.service;
 
 import com.example.metricsdemo.exception.UserNotFoundException;
-import com.example.metricsdemo.model.Department;
-import com.example.metricsdemo.model.User;
-import com.example.metricsdemo.repository.DepartmentRepository;
-import com.example.metricsdemo.repository.UserRepository;
+import com.example.metricsdemo.model.*;
+import com.example.metricsdemo.repository.*;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
@@ -13,10 +11,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -30,10 +33,22 @@ public class UserService {
     private DepartmentRepository departmentRepository;
     
     @Autowired
+    private UserCredentialsRepository userCredentialsRepository;
+    
+    @Autowired
+    private RoleRepository roleRepository;
+    
+    @Autowired
+    private UserRoleRepository userRoleRepository;
+    
+    @Autowired
     private UserCacheService userCacheService;
     
     @Autowired
     private UserSearchService userSearchService;
+    
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     public UserService(UserRepository userRepository, MeterRegistry meterRegistry) {
         this.userRepository = userRepository;
@@ -49,13 +64,13 @@ public class UserService {
     }
 
     public List<User> getAllUsers(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, org.springframework.data.domain.Sort.by("id").ascending());
         Page<User> userPage = userRepository.findAll(pageable);
         return userPage.getContent();
     }
 
     public Page<User> getAllUsersPaged(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, org.springframework.data.domain.Sort.by("id").ascending());
         return userRepository.findAll(pageable);
     }
 
@@ -84,16 +99,48 @@ public class UserService {
         throw new UserNotFoundException(id);
     }
 
-    public User createUser(User user) {
+    @Transactional
+    public User createUser(String username, String password, String name, String email, Long departmentId, Set<String> roleNames) {
+        // Get department
+        Department department = getDepartmentById(departmentId);
+        
+        // Create user entity
+        User user = new User(name, email, department);
         User savedUser = userRepository.save(user);
+        
+        // Create credentials
+        UserCredentials credentials = new UserCredentials(
+            savedUser,
+            username,
+            passwordEncoder.encode(password)
+        );
+        userCredentialsRepository.save(credentials);
+        savedUser.setCredentials(credentials);
+        
+        // Assign roles (default to ROLE_USER if none provided)
+        if (roleNames == null || roleNames.isEmpty()) {
+            roleNames = Set.of("ROLE_USER");
+        }
+        
+        for (String roleName : roleNames) {
+            Role role = roleRepository.findByName(roleName)
+                .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
+            savedUser.addRole(role);
+        }
+        
+        savedUser = userRepository.save(savedUser);
+        
         // Cache the newly created user
         userCacheService.cacheUser(savedUser);
         // Index in Elasticsearch
         userSearchService.indexUser(savedUser);
+        
+        logger.info("Created user: {} with roles: {}", username, roleNames);
         return savedUser;
     }
 
-    public User updateUser(Long id, User userDetails) {
+    @Transactional
+    public User updateUser(Long id, String name, String email, Long departmentId, String password, Set<String> roleNames) {
         logger.info("Attempting to update user with ID: {}", id);
         Optional<User> optionalUser = userRepository.findById(id);
         if (optionalUser.isPresent()) {
@@ -102,9 +149,41 @@ public class UserService {
             String oldEmail = user.getEmail();
             String oldDepartment = user.getDepartment() != null ? user.getDepartment().getName() : "null";
             
-            user.setName(userDetails.getName());
-            user.setEmail(userDetails.getEmail());
-            user.setDepartment(userDetails.getDepartment());
+            // Update basic fields
+            if (name != null) {
+                user.setName(name);
+            }
+            if (email != null) {
+                user.setEmail(email);
+            }
+            if (departmentId != null) {
+                Department department = getDepartmentById(departmentId);
+                user.setDepartment(department);
+            }
+            
+            // Update password if provided
+            if (password != null && !password.isEmpty()) {
+                UserCredentials credentials = user.getCredentials();
+                if (credentials != null) {
+                    credentials.setPassword(passwordEncoder.encode(password));
+                    userCredentialsRepository.save(credentials);
+                }
+            }
+            
+            // Update roles if provided
+            if (roleNames != null && !roleNames.isEmpty()) {
+                // Clear existing roles
+                user.getUserRoles().clear();
+                userRoleRepository.deleteAll(userRoleRepository.findByUserId(id));
+                
+                // Add new roles
+                for (String roleName : roleNames) {
+                    Role role = roleRepository.findByName(roleName)
+                        .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
+                    user.addRole(role);
+                }
+            }
+            
             User updatedUser = userRepository.save(user);
             
             logger.info("User updated successfully - ID: {}, Old: [name={}, email={}, dept={}], New: [name={}, email={}, dept={}]", 
@@ -127,11 +206,15 @@ public class UserService {
         throw new UserNotFoundException(id);
     }
 
+    @Transactional
     public boolean deleteUser(Long id) {
         logger.info("Attempting to delete user with ID: {}", id);
         if (userRepository.existsById(id)) {
             Optional<User> user = userRepository.findById(id);
             String userName = user.map(User::getName).orElse("Unknown");
+            
+            // Delete credentials (cascade will handle UserRole)
+            userCredentialsRepository.findByUserId(id).ifPresent(userCredentialsRepository::delete);
             
             userRepository.deleteById(id);
             logger.info("User deleted successfully - ID: {}, Name: {}", id, userName);
@@ -191,5 +274,49 @@ public class UserService {
         List<User> allUsers = userRepository.findAll();
         userSearchService.reindexAll(allUsers);
         return allUsers.size();
+    }
+    
+    // Authentication-specific methods
+    
+    public User getUserByUsername(String username) {
+        UserCredentials credentials = userCredentialsRepository.findByUsername(username)
+            .orElseThrow(() -> new UserNotFoundException("User not found with username: " + username));
+        return credentials.getUser();
+    }
+    
+    @Transactional
+    public User updateUserRoles(Long id, Set<String> roleNames) {
+        logger.info("Attempting to update roles for user with ID: {}", id);
+        Optional<User> optionalUser = userRepository.findById(id);
+        if (optionalUser.isPresent()) {
+            User user = optionalUser.get();
+            Set<String> oldRoles = user.getUserRoles().stream()
+                .map(ur -> ur.getRole().getName())
+                .collect(Collectors.toSet());
+            
+            // Clear existing roles
+            user.getUserRoles().clear();
+            userRoleRepository.deleteAll(userRoleRepository.findByUserId(id));
+            
+            // Add new roles
+            for (String roleName : roleNames) {
+                Role role = roleRepository.findByName(roleName)
+                    .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
+                user.addRole(role);
+            }
+            
+            User updatedUser = userRepository.save(user);
+            
+            logger.info("User roles updated successfully - ID: {}, Old roles: {}, New roles: {}", 
+                id, oldRoles, roleNames);
+            
+            // Update cache
+            userCacheService.cacheUser(updatedUser);
+            
+            return updatedUser;
+        }
+        
+        logger.error("Failed to update roles - User with ID {} not found", id);
+        throw new UserNotFoundException(id);
     }
 }

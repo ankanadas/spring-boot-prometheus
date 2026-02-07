@@ -1,6 +1,8 @@
 package com.example.metricsdemo.model;
 
 import jakarta.persistence.*;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "users", schema = "userschema")
@@ -19,6 +21,12 @@ public class User {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "department_id", nullable = false)
     private Department department;
+    
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private UserCredentials credentials;
+    
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private Set<UserRole> userRoles = new HashSet<>();
     
     // Constructors
     public User() {}
@@ -60,6 +68,37 @@ public class User {
     
     public void setDepartment(Department department) {
         this.department = department;
+    }
+    
+    public UserCredentials getCredentials() {
+        return credentials;
+    }
+    
+    public void setCredentials(UserCredentials credentials) {
+        this.credentials = credentials;
+    }
+    
+    public Set<UserRole> getUserRoles() {
+        return userRoles;
+    }
+    
+    public void setUserRoles(Set<UserRole> userRoles) {
+        this.userRoles = userRoles;
+    }
+    
+    // Helper methods for roles
+    public void addRole(Role role) {
+        UserRole userRole = new UserRole(this, role);
+        userRoles.add(userRole);
+    }
+    
+    public void removeRole(Role role) {
+        userRoles.removeIf(ur -> ur.getRole().equals(role));
+    }
+    
+    public boolean hasRole(String roleName) {
+        return userRoles.stream()
+            .anyMatch(ur -> ur.getRole().getName().equals(roleName));
     }
     
     @Override

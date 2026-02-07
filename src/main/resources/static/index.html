@@ -417,6 +417,7 @@
         <div class="header">
             <h1>👥 User Management System</h1>
             <p>Spring Boot + Redis + Prometheus Monitoring</p>
+            <button onclick="logout()" style="position: absolute; top: 20px; right: 20px; padding: 10px 20px; background: rgba(255,255,255,0.2); color: white; border: 2px solid white; border-radius: 5px; cursor: pointer; font-weight: 600;">Logout</button>
         </div>
 
         <div class="content">
@@ -498,7 +499,9 @@
                 <table class="user-table" id="userTable">
                     <thead>
                         <tr>
-                            <th>ID</th>
+                            <th class="sortable" onclick="sortTable('id')">
+                                ID <span class="sort-icon" id="sort-id">▲</span>
+                            </th>
                             <th class="sortable" onclick="sortTable('name')">
                                 Name <span class="sort-icon" id="sort-name">▲</span>
                             </th>
@@ -550,6 +553,32 @@
     </div>
 
     <script>
+        // Check authentication on page load
+        (function checkAuth() {
+            const authCredentials = sessionStorage.getItem('authCredentials');
+            if (!authCredentials) {
+                // Not authenticated, redirect to login
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            // Set up fetch to include auth header for all requests
+            const originalFetch = window.fetch;
+            window.fetch = function(...args) {
+                if (args[1]) {
+                    args[1].headers = args[1].headers || {};
+                    args[1].headers['Authorization'] = 'Basic ' + authCredentials;
+                } else {
+                    args[1] = {
+                        headers: {
+                            'Authorization': 'Basic ' + authCredentials
+                        }
+                    };
+                }
+                return originalFetch.apply(this, args);
+            };
+        })();
+        
         let currentPage = 0;
         let pageSize = 5;
         let allUsers = [];
@@ -632,7 +661,10 @@
                     const newUser = await response.json();
                     showMessage('success', `User "${newUser.name}" added successfully!`);
                     document.getElementById('addUserForm').reset();
-                    loadUsers(); // Reload the user list
+                    // Clear sorting and reload from first page
+                    clearSorting();
+                    currentPage = 0;
+                    loadUsers(0);
                 } else {
                     const error = await response.json();
                     showMessage('error', `Error: ${error.message || 'Failed to add user'}`);
@@ -688,9 +720,9 @@
 
             users.forEach(user => {
                 const row = document.createElement('tr');
-                const badgeClass = getBadgeClass(user.department);
-                const deptName = typeof user.department === 'object' ? user.department.name : user.department;
-                const deptId = typeof user.department === 'object' ? user.department.id : null;
+                const badgeClass = getBadgeClass(user.departmentName);
+                const deptName = user.departmentName;
+                const deptId = user.departmentId;
                 
                 row.innerHTML = `
                     <td>${user.id}</td>
@@ -712,10 +744,9 @@
         }
 
         // Get badge class based on department
-        function getBadgeClass(department) {
-            // Handle department object or string
-            const deptName = typeof department === 'object' ? department.name : department;
-            const dept = deptName.toLowerCase();
+        function getBadgeClass(departmentName) {
+            if (!departmentName) return 'badge-default';
+            const dept = departmentName.toLowerCase();
             if (dept.includes('engineering')) return 'badge-engineering';
             if (dept.includes('marketing')) return 'badge-marketing';
             if (dept.includes('sales')) return 'badge-sales';
@@ -877,18 +908,30 @@
             users.sort((a, b) => {
                 let aVal, bVal;
                 
-                if (field === 'department') {
-                    aVal = (typeof a.department === 'object' ? a.department.name : a.department).toLowerCase();
-                    bVal = (typeof b.department === 'object' ? b.department.name : b.department).toLowerCase();
+                if (field === 'id') {
+                    // Numeric sort for ID
+                    aVal = a.id;
+                    bVal = b.id;
+                    
+                    if (direction === 'asc') {
+                        return aVal - bVal;
+                    } else {
+                        return bVal - aVal;
+                    }
+                } else if (field === 'department') {
+                    aVal = (a.departmentName || '').toLowerCase();
+                    bVal = (b.departmentName || '').toLowerCase();
                 } else {
                     aVal = a[field].toLowerCase();
                     bVal = b[field].toLowerCase();
                 }
                 
-                if (direction === 'asc') {
-                    return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
-                } else {
-                    return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
+                if (field !== 'id') {
+                    if (direction === 'asc') {
+                        return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+                    } else {
+                        return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
+                    }
                 }
             });
         }
@@ -907,6 +950,17 @@
                 activeIcon.classList.add('active');
                 activeIcon.textContent = direction === 'asc' ? '▲' : '▼';
             }
+        }
+
+        // Clear sorting state
+        function clearSorting() {
+            currentSortField = null;
+            currentSortDirection = 'asc';
+            // Reset all sort icons
+            document.querySelectorAll('.sort-icon').forEach(icon => {
+                icon.classList.remove('active');
+                icon.textContent = '▲';
+            });
         }
 
         // Show message
@@ -982,7 +1036,10 @@
                     const updatedUser = await response.json();
                     showMessage('success', `User "${updatedUser.name}" updated successfully!`);
                     closeEditModal();
-                    loadUsers(currentPage); // Reload current page
+                    // Clear sorting and reload from first page to show updated user in correct position
+                    clearSorting();
+                    currentPage = 0;
+                    loadUsers(0);
                 } else {
                     const error = await response.json();
                     showMessage('error', `Error: ${error.message || 'Failed to update user'}`);
@@ -1005,7 +1062,10 @@
 
                 if (response.ok) {
                     showMessage('success', 'User deleted successfully!');
-                    loadUsers(currentPage); // Reload current page
+                    // Clear sorting and reload from first page
+                    clearSorting();
+                    currentPage = 0;
+                    loadUsers(0);
                 } else {
                     const error = await response.json();
                     showMessage('error', `Error: ${error.message || 'Failed to delete user'}`);
@@ -1021,6 +1081,13 @@
             if (event.target == modal) {
                 closeEditModal();
             }
+        }
+        
+        // Logout function
+        function logout() {
+            sessionStorage.removeItem('authCredentials');
+            sessionStorage.removeItem('username');
+            window.location.href = '/login.html';
         }
     </script>
 </body>

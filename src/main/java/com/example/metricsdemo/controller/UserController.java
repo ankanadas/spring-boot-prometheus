@@ -1,6 +1,6 @@
 package com.example.metricsdemo.controller;
 
-import com.example.metricsdemo.dto.PagedResponse;
+import com.example.metricsdemo.dto.*;
 import com.example.metricsdemo.model.User;
 import com.example.metricsdemo.service.UserService;
 import io.micrometer.core.annotation.Counted;
@@ -14,13 +14,17 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/users")
@@ -60,9 +64,9 @@ public class UserController {
     @Operation(summary = "Get all users (paginated)", description = "Retrieve a paginated list of users")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved users",
-                content = @Content(mediaType = "application/json", schema = @Schema(implementation = User.class)))
+                content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserDTO.class)))
     })
-    public List<User> getAllUsers(
+    public List<UserDTO> getAllUsers(
             @Parameter(description = "Page number (0-indexed)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Number of users per page") @RequestParam(defaultValue = "5") int size) {
         userRetrievalCounter.increment();
@@ -70,7 +74,9 @@ public class UserController {
         // Simulate some processing time
         simulateProcessingTime();
         
-        return userService.getAllUsers(page, size);
+        return userService.getAllUsers(page, size).stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
     }
 
     @GetMapping("/paged")
@@ -79,7 +85,7 @@ public class UserController {
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved paginated users")
     })
-    public ResponseEntity<PagedResponse<User>> getAllUsersPaged(
+    public ResponseEntity<PagedResponse<UserDTO>> getAllUsersPaged(
             @Parameter(description = "Page number (0-indexed)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Number of users per page") @RequestParam(defaultValue = "5") int size) {
         userRetrievalCounter.increment();
@@ -89,8 +95,12 @@ public class UserController {
         
         Page<User> userPage = userService.getAllUsersPaged(page, size);
         
-        PagedResponse<User> response = new PagedResponse<>(
-            userPage.getContent(),
+        List<UserDTO> userDTOs = userPage.getContent().stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
+        
+        PagedResponse<UserDTO> response = new PagedResponse<>(
+            userDTOs,
             userPage.getNumber(),
             userPage.getSize(),
             userPage.getTotalElements(),
@@ -106,8 +116,8 @@ public class UserController {
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved search results")
     })
-    public ResponseEntity<PagedResponse<User>> searchUsers(
-            @Parameter(description = "Search query string (handles typos)") @RequestParam String query,
+    public ResponseEntity<PagedResponse<UserDTO>> searchUsers(
+            @Parameter(description = "Search query string (handles typos)") @RequestParam(required = false, defaultValue = "") String query,
             @Parameter(description = "Page number (0-indexed)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Number of users per page") @RequestParam(defaultValue = "5") int size) {
         userRetrievalCounter.increment();
@@ -115,11 +125,24 @@ public class UserController {
         // Simulate some processing time
         simulateProcessingTime();
         
-        // Use Elasticsearch fuzzy search
-        Page<User> userPage = userService.fuzzySearchUsersAsUsers(query, page, size);
+        Page<User> userPage;
         
-        PagedResponse<User> response = new PagedResponse<>(
-            userPage.getContent(),
+        // If query is empty, use PostgreSQL (sorted by ID by default)
+        // If query has value, use Elasticsearch (fuzzy search with relevance scoring)
+        if (query == null || query.trim().isEmpty()) {
+            // Use regular pagination sorted by ID
+            userPage = userService.getAllUsersPaged(page, size);
+        } else {
+            // Use Elasticsearch fuzzy search
+            userPage = userService.fuzzySearchUsersAsUsers(query, page, size);
+        }
+        
+        List<UserDTO> userDTOs = userPage.getContent().stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
+        
+        PagedResponse<UserDTO> response = new PagedResponse<>(
+            userDTOs,
             userPage.getNumber(),
             userPage.getSize(),
             userPage.getTotalElements(),
@@ -134,10 +157,10 @@ public class UserController {
     @Operation(summary = "Get user by ID", description = "Retrieve a specific user by their ID (checks Redis cache first)")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "User found",
-                content = @Content(mediaType = "application/json", schema = @Schema(implementation = User.class))),
+                content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserDTO.class))),
         @ApiResponse(responseCode = "404", description = "User not found")
     })
-    public ResponseEntity<User> getUserById(
+    public ResponseEntity<UserDTO> getUserById(
             @Parameter(description = "User ID") @PathVariable Long id) {
         userRetrievalCounter.increment();
         
@@ -145,30 +168,40 @@ public class UserController {
         simulateProcessingTime();
         
         User user = userService.getUserById(id);
-        return ResponseEntity.ok(user);
+        return ResponseEntity.ok(convertToDTO(user));
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     @Timed(value = "create_user_duration", description = "Time taken to create a user")
     @Counted(value = "create_user_count", description = "Number of users created")
-    @Operation(summary = "Create a new user", description = "Create a new user and cache it in Redis")
+    @Operation(summary = "Create a new user", description = "Create a new user and cache it in Redis (ADMIN only)")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "User created successfully",
-                content = @Content(mediaType = "application/json", schema = @Schema(implementation = User.class)))
+                content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserDTO.class)))
     })
-    public User createUser(
+    public ResponseEntity<UserDTO> createUser(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                description = "User object to create",
+                description = "User creation request",
                 required = true,
-                content = @Content(schema = @Schema(implementation = User.class))
+                content = @Content(schema = @Schema(implementation = CreateUserRequest.class))
             )
-            @RequestBody User user) {
+            @Valid @RequestBody CreateUserRequest request) {
         userCreationCounter.increment();
         
         // Simulate some processing time
         simulateProcessingTime();
         
-        return userService.createUser(user);
+        User user = userService.createUser(
+            request.getUsername(),
+            request.getPassword(),
+            request.getName(),
+            request.getEmail(),
+            request.getDepartmentId(),
+            request.getRoles()
+        );
+        
+        return ResponseEntity.ok(convertToDTO(user));
     }
 
     @PutMapping("/{id}")
@@ -176,29 +209,52 @@ public class UserController {
     @Operation(summary = "Update user", description = "Update an existing user and refresh Redis cache")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "User updated successfully",
-                content = @Content(mediaType = "application/json", schema = @Schema(implementation = User.class))),
+                content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserDTO.class))),
         @ApiResponse(responseCode = "404", description = "User not found")
     })
-    public ResponseEntity<User> updateUser(
+    public ResponseEntity<UserDTO> updateUser(
             @Parameter(description = "User ID") @PathVariable Long id,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                description = "Updated user object",
+                description = "Updated user data",
                 required = true,
-                content = @Content(schema = @Schema(implementation = User.class))
+                content = @Content(schema = @Schema(implementation = UpdateUserRequest.class))
             )
-            @RequestBody User userDetails) {
+            @Valid @RequestBody UpdateUserRequest request) {
         userUpdateCounter.increment();
         
         // Simulate some processing time
         simulateProcessingTime();
         
-        User updatedUser = userService.updateUser(id, userDetails);
-        return ResponseEntity.ok(updatedUser);
+        User updatedUser = userService.updateUser(
+            id,
+            request.getName(),
+            request.getEmail(),
+            request.getDepartmentId(),
+            request.getPassword(),
+            request.getRoles()
+        );
+        
+        return ResponseEntity.ok(convertToDTO(updatedUser));
+    }
+
+    @PatchMapping("/{id}/roles")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Update user roles", description = "Update roles for a user (ADMIN only)")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Roles updated successfully"),
+        @ApiResponse(responseCode = "404", description = "User not found")
+    })
+    public ResponseEntity<UserDTO> updateUserRoles(
+            @Parameter(description = "User ID") @PathVariable Long id,
+            @Valid @RequestBody RoleUpdateRequest request) {
+        User updatedUser = userService.updateUserRoles(id, request.getRoles());
+        return ResponseEntity.ok(convertToDTO(updatedUser));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     @Timed(value = "delete_user_duration", description = "Time taken to delete a user")
-    @Operation(summary = "Delete user", description = "Delete a user and remove from Redis cache")
+    @Operation(summary = "Delete user", description = "Delete a user and remove from Redis cache (ADMIN only)")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "User deleted successfully"),
         @ApiResponse(responseCode = "404", description = "User not found")
@@ -268,10 +324,30 @@ public class UserController {
     }
     
     @PostMapping("/reindex")
-    @Operation(summary = "Reindex all users", description = "Reindex all users in Elasticsearch for fuzzy search")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Reindex all users", description = "Reindex all users in Elasticsearch for fuzzy search (ADMIN only)")
     @ApiResponse(responseCode = "200", description = "Reindexing completed")
     public ResponseEntity<String> reindexUsers() {
         long count = userService.reindexAllUsers();
         return ResponseEntity.ok("Reindexed " + count + " users in Elasticsearch");
+    }
+    
+    // Helper method to convert User entity to UserDTO
+    private UserDTO convertToDTO(User user) {
+        Set<String> roleNames = user.getUserRoles().stream()
+            .map(ur -> ur.getRole().getName())
+            .collect(Collectors.toSet());
+        
+        String username = user.getCredentials() != null ? user.getCredentials().getUsername() : null;
+        
+        return new UserDTO(
+            user.getId(),
+            username,
+            user.getName(),
+            user.getEmail(),
+            user.getDepartment().getId(),
+            user.getDepartment().getName(),
+            roleNames
+        );
     }
 }

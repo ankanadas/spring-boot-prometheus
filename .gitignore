@@ -59,3 +59,6 @@ Thumbs.db
 # Uncomment to exclude application.yml with credentials
 # src/main/resources/application.yml
 .env
+
+### Kiro Specs ###
+.kiro/specs/

@@ -101,12 +101,22 @@ public class UserService {
 
     @Transactional
     public User createUser(String username, String password, String name, String email, Long departmentId, Set<String> roleNames) {
+        logger.info("Creating user: username={}, name={}, email={}, departmentId={}, roles={}", 
+            username, name, email, departmentId, roleNames);
+        
+        // Validate inputs
+        if (departmentId == null) {
+            throw new IllegalArgumentException("Department ID cannot be null");
+        }
+        
         // Get department
         Department department = getDepartmentById(departmentId);
+        logger.info("Found department: {}", department.getName());
         
         // Create user entity
         User user = new User(name, email, department);
         User savedUser = userRepository.save(user);
+        logger.info("Saved user entity with ID: {}", savedUser.getId());
         
         // Create credentials
         UserCredentials credentials = new UserCredentials(
@@ -116,6 +126,7 @@ public class UserService {
         );
         userCredentialsRepository.save(credentials);
         savedUser.setCredentials(credentials);
+        logger.info("Created credentials for user: {}", username);
         
         // Assign roles (default to ROLE_USER if none provided)
         if (roleNames == null || roleNames.isEmpty()) {
@@ -123,11 +134,18 @@ public class UserService {
         }
         
         for (String roleName : roleNames) {
+            logger.info("Looking up role: {}", roleName);
             Role role = roleRepository.findByName(roleName)
                 .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
-            savedUser.addRole(role);
+            
+            // Create UserRole manually to avoid cascade issues
+            UserRole userRole = new UserRole(savedUser, role);
+            userRoleRepository.save(userRole);
+            savedUser.getUserRoles().add(userRole);
+            logger.info("Added role {} to user {}", roleName, username);
         }
         
+        // Save user again to update relationships
         savedUser = userRepository.save(savedUser);
         
         // Cache the newly created user
@@ -212,6 +230,15 @@ public class UserService {
         if (userRepository.existsById(id)) {
             Optional<User> user = userRepository.findById(id);
             String userName = user.map(User::getName).orElse("Unknown");
+            
+            // Check if this is the admin user - prevent deletion
+            if (user.isPresent()) {
+                UserCredentials credentials = user.get().getCredentials();
+                if (credentials != null && "admin".equals(credentials.getUsername())) {
+                    logger.warn("Attempted to delete admin user - operation blocked");
+                    throw new IllegalArgumentException("Cannot delete the admin user");
+                }
+            }
             
             // Delete credentials (cascade will handle UserRole)
             userCredentialsRepository.findByUserId(id).ifPresent(userCredentialsRepository::delete);

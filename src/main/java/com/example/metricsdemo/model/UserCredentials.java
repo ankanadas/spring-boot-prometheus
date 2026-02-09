@@ -1,5 +1,7 @@
 package com.example.metricsdemo.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
 @Entity
@@ -12,12 +14,14 @@ public class UserCredentials {
     
     @OneToOne
     @JoinColumn(name = "user_id", nullable = false, unique = true)
+    @JsonManagedReference("user-credentials")
     private User user;
     
     @Column(nullable = false, unique = true)
     private String username;
     
     @Column(nullable = false)
+    @JsonIgnore  // Never expose password in JSON
     private String password;  // BCrypt hashed
     
     // Constructors

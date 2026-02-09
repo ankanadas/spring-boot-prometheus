@@ -640,19 +640,25 @@
                 return;
             }
             
+            // Generate username from email (before @ symbol)
+            const email = document.getElementById('email').value;
+            const username = email.split('@')[0];
+            
             const user = {
+                username: username,
+                password: 'password123',  // Default password
                 name: document.getElementById('name').value,
-                email: document.getElementById('email').value,
-                department: {
-                    id: parseInt(departmentId)
-                }
+                email: email,
+                departmentId: parseInt(departmentId),
+                roles: ['ROLE_USER']  // Default role
             };
 
             try {
                 const response = await fetch('/api/users', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Basic ' + btoa('admin:admin123')  // Add admin auth
                     },
                     body: JSON.stringify(user)
                 });

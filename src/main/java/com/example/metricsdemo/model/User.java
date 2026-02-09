@@ -1,5 +1,6 @@
 package com.example.metricsdemo.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import java.util.HashSet;
 import java.util.Set;
@@ -23,9 +24,11 @@ public class User {
     private Department department;
     
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonBackReference("user-credentials")
     private UserCredentials credentials;
     
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JsonBackReference("user-roles")
     private Set<UserRole> userRoles = new HashSet<>();
     
     // Constructors

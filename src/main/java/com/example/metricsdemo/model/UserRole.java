@@ -1,5 +1,6 @@
 package com.example.metricsdemo.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
@@ -12,6 +13,7 @@ public class UserRole {
     
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore  // Prevent circular reference
     private User user;
     
     @ManyToOne

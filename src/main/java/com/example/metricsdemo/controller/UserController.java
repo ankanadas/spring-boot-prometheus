@@ -206,10 +206,11 @@ public class UserController {
 
     @PutMapping("/{id}")
     @Timed(value = "update_user_duration", description = "Time taken to update a user")
-    @Operation(summary = "Update user", description = "Update an existing user and refresh Redis cache")
+    @Operation(summary = "Update user", description = "Update an existing user and refresh Redis cache. USER role can only update their own profile and cannot change roles.")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "User updated successfully",
                 content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserDTO.class))),
+        @ApiResponse(responseCode = "403", description = "Access denied - USER can only update their own profile"),
         @ApiResponse(responseCode = "404", description = "User not found")
     })
     public ResponseEntity<UserDTO> updateUser(
@@ -219,11 +220,35 @@ public class UserController {
                 required = true,
                 content = @Content(schema = @Schema(implementation = UpdateUserRequest.class))
             )
-            @Valid @RequestBody UpdateUserRequest request) {
+            @Valid @RequestBody UpdateUserRequest request,
+            org.springframework.security.core.Authentication authentication) {
         userUpdateCounter.increment();
         
         // Simulate some processing time
         simulateProcessingTime();
+        
+        // Check if user is ADMIN
+        boolean isAdmin = authentication.getAuthorities().stream()
+            .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
+        
+        if (!isAdmin) {
+            // USER role - check ownership
+            String username = authentication.getName();
+            User targetUser = userService.getUserById(id);
+            String targetUsername = targetUser.getCredentials() != null ? 
+                targetUser.getCredentials().getUsername() : null;
+            
+            if (!username.equals(targetUsername)) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                    "You can only update your own profile");
+            }
+            
+            // USER cannot change their own role - remove roles from request
+            if (request.getRoles() != null && !request.getRoles().isEmpty()) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                    "You cannot change your own role");
+            }
+        }
         
         User updatedUser = userService.updateUser(
             id,

@@ -60,5 +60,8 @@ Thumbs.db
 # src/main/resources/application.yml
 .env
 
+### Deployment Guides ###
+AWS-EC2-DEPLOYMENT.md
+
 ### Kiro Specs ###
 .kiro/specs/

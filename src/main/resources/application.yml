@@ -40,7 +40,7 @@ spring:
           min-idle: 0
   
   elasticsearch:
-    uris: http://localhost:9200
+    uris: http://172.31.43.244:9200
 
 management:
   endpoints:

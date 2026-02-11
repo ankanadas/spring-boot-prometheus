@@ -1,7 +1,9 @@
 package com.example.metricsdemo.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Email;
 
+import java.util.Map;
 import java.util.Set;
 
 public class UpdateUserRequest {
@@ -51,6 +53,19 @@ public class UpdateUserRequest {
     
     public void setDepartmentId(Long departmentId) {
         this.departmentId = departmentId;
+    }
+    
+    // Handle both "departmentId": 2 and "department": {"id": 2} formats
+    @JsonProperty("department")
+    public void setDepartment(Map<String, Object> department) {
+        if (department != null && department.containsKey("id")) {
+            Object id = department.get("id");
+            if (id instanceof Number) {
+                this.departmentId = ((Number) id).longValue();
+            } else if (id instanceof String) {
+                this.departmentId = Long.parseLong((String) id);
+            }
+        }
     }
     
     public String getPassword() {

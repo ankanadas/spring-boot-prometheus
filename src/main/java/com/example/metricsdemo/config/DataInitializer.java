@@ -31,8 +31,8 @@ public class DataInitializer implements CommandLineRunner {
     @Autowired
     private UserRoleRepository userRoleRepository;
     
-    @Autowired
-    private UserSearchService userSearchService;
+    // @Autowired
+    // private UserSearchService userSearchService;
     
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -113,10 +113,11 @@ public class DataInitializer implements CommandLineRunner {
         logger.info("✅ Sample data initialized successfully: {} users and {} departments created", 
             finalUserCount, finalDeptCount);
         
+        // Elasticsearch disabled for t2.micro instance
         // Index all users in Elasticsearch
-        logger.info("Indexing users in Elasticsearch...");
-        userSearchService.reindexAll(userRepository.findAll());
-        logger.info("✅ Elasticsearch indexing complete");
+        // logger.info("Indexing users in Elasticsearch...");
+        // userSearchService.reindexAll(userRepository.findAll());
+        // logger.info("✅ Elasticsearch indexing complete");
     }
     
     private void initializeRoles() {
@@ -281,8 +282,9 @@ public class DataInitializer implements CommandLineRunner {
         adminUser.addRole(adminRole);
         adminUser = userRepository.save(adminUser);
         
+        // Elasticsearch disabled for t2.micro instance
         // Index in Elasticsearch
-        userSearchService.indexUser(adminUser);
+        // userSearchService.indexUser(adminUser);
         
         logger.info("✅ Bootstrap admin created - username: admin, password: admin123, role: ROLE_ADMIN");
     }

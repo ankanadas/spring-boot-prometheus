@@ -3,7 +3,7 @@ server:
   grpc_listen_port: 0
 
 positions:
-  filename: ./loki/positions.yaml
+  filename: /home/ubuntu/SpringBoot-Redis-Elastic-Prometheus-Grafana/loki/positions.yaml
 
 clients:
   - url: http://localhost:3100/loki/api/v1/push
@@ -15,4 +15,4 @@ scrape_configs:
           - localhost
         labels:
           job: spring-boot-prometheus
-          __path__: /Users/ankanadas/opaenai-project/beginner-project/logs/spring-boot.log
+          __path__: /home/ubuntu/SpringBoot-Redis-Elastic-Prometheus-Grafana/logs/spring-boot.log

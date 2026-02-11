@@ -39,8 +39,9 @@ spring:
           max-idle: 8
           min-idle: 0
   
-  elasticsearch:
-    uris: http://localhost:9200
+  # Elasticsearch disabled for t2.micro instance
+  # elasticsearch:
+  #   uris: http://localhost:9200
 
 management:
   endpoints:

@@ -148,8 +148,6 @@ public class UserService {
         // Save user again to update relationships
         savedUser = userRepository.save(savedUser);
         
-        // Cache the newly created user
-        userCacheService.cacheUser(savedUser);
         // Index in Elasticsearch
         userSearchService.indexUser(savedUser);
         
@@ -209,9 +207,9 @@ public class UserService {
                 updatedUser.getName(), updatedUser.getEmail(), 
                 updatedUser.getDepartment() != null ? updatedUser.getDepartment().getName() : "null");
             
-            // Update cache with new user data
-            userCacheService.cacheUser(updatedUser);
-            logger.info("Updated user {} cached in Redis", id);
+            // Evict from cache to ensure fresh data on next read
+            userCacheService.evictUser(id);
+            logger.info("Evicted user {} from Redis cache after update", id);
             
             // Update Elasticsearch index
             userSearchService.indexUser(updatedUser);

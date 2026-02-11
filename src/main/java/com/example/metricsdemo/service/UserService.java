@@ -44,8 +44,8 @@ public class UserService {
     @Autowired
     private UserCacheService userCacheService;
     
-    @Autowired
-    private UserSearchService userSearchService;
+    // @Autowired
+    // private UserSearchService userSearchService;
     
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -150,8 +150,8 @@ public class UserService {
         
         // Cache the newly created user
         userCacheService.cacheUser(savedUser);
-        // Index in Elasticsearch
-        userSearchService.indexUser(savedUser);
+        // Index in Elasticsearch - disabled for t2.micro
+        // userSearchService.indexUser(savedUser);
         
         logger.info("Created user: {} with roles: {}", username, roleNames);
         return savedUser;
@@ -213,8 +213,8 @@ public class UserService {
             userCacheService.cacheUser(updatedUser);
             logger.info("Updated user {} cached in Redis", id);
             
-            // Update Elasticsearch index
-            userSearchService.indexUser(updatedUser);
+            // Update Elasticsearch index - disabled for t2.micro
+            // userSearchService.indexUser(updatedUser);
             
             return updatedUser;
         }
@@ -250,8 +250,8 @@ public class UserService {
             userCacheService.evictUser(id);
             logger.info("User {} evicted from Redis cache", id);
             
-            // Remove from Elasticsearch
-            userSearchService.deleteUser(id);
+            // Remove from Elasticsearch - disabled for t2.micro
+            // userSearchService.deleteUser(id);
             
             return true;
         }
@@ -275,11 +275,20 @@ public class UserService {
     }
     
     public Page<?> fuzzySearchUsers(String searchTerm, int page, int size) {
+        // Elasticsearch disabled for t2.micro - return empty page
+        logger.warn("Fuzzy search not available - Elasticsearch disabled");
+        return Page.empty();
+        /*
         Pageable pageable = PageRequest.of(page, size);
         return userSearchService.fuzzySearch(searchTerm, pageable);
+        */
     }
     
     public Page<User> fuzzySearchUsersAsUsers(String searchTerm, int page, int size) {
+        // Elasticsearch disabled for t2.micro - return empty page
+        logger.warn("Fuzzy search not available - Elasticsearch disabled");
+        return Page.empty();
+        /*
         Pageable pageable = PageRequest.of(page, size);
         Page<com.example.metricsdemo.document.UserDocument> searchResults = 
             userSearchService.fuzzySearch(searchTerm, pageable);
@@ -295,12 +304,18 @@ public class UserService {
             pageable,
             searchResults.getTotalElements()
         );
+        */
     }
     
     public long reindexAllUsers() {
+        // Elasticsearch disabled for t2.micro
+        logger.warn("Reindex not available - Elasticsearch disabled");
+        return 0;
+        /*
         List<User> allUsers = userRepository.findAll();
         userSearchService.reindexAll(allUsers);
         return allUsers.size();
+        */
     }
     
     // Authentication-specific methods

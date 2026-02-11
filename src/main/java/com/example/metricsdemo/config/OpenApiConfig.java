@@ -17,6 +17,10 @@ public class OpenApiConfig {
         Server localServer = new Server();
         localServer.setUrl("http://localhost:8080");
         localServer.setDescription("Local Development Server");
+        
+        Server ec2Server = new Server();
+        ec2Server.setUrl("http://18.221.52.172");
+        ec2Server.setDescription("EC2 Production Server");
 
         Contact contact = new Contact();
         contact.setName("User Management API");
@@ -30,6 +34,6 @@ public class OpenApiConfig {
 
         return new OpenAPI()
                 .info(info)
-                .servers(List.of(localServer));
+                .servers(List.of(ec2Server, localServer));
     }
 }

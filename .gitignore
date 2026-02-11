@@ -62,6 +62,7 @@ Thumbs.db
 
 ### Deployment Guides ###
 AWS-EC2-DEPLOYMENT.md
+EC2-SSH-COMMANDS.md
 
 ### Kiro Specs ###
 .kiro/specs/

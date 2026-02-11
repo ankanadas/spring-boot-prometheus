@@ -10,6 +10,7 @@ public class UserDTO {
     private Long departmentId;
     private String departmentName;
     private Set<String> roles;  // Role names like "ROLE_USER", "ROLE_ADMIN"
+    private boolean deletable;  // Whether this user can be deleted
     // NO password field - never expose passwords in responses
     
     public UserDTO() {}
@@ -22,6 +23,18 @@ public class UserDTO {
         this.departmentId = departmentId;
         this.departmentName = departmentName;
         this.roles = roles;
+        this.deletable = true;  // Default to true
+    }
+    
+    public UserDTO(Long id, String username, String name, String email, Long departmentId, String departmentName, Set<String> roles, boolean deletable) {
+        this.id = id;
+        this.username = username;
+        this.name = name;
+        this.email = email;
+        this.departmentId = departmentId;
+        this.departmentName = departmentName;
+        this.roles = roles;
+        this.deletable = deletable;
     }
     
     // Getters and Setters
@@ -79,5 +92,13 @@ public class UserDTO {
     
     public void setRoles(Set<String> roles) {
         this.roles = roles;
+    }
+    
+    public boolean isDeletable() {
+        return deletable;
+    }
+    
+    public void setDeletable(boolean deletable) {
+        this.deletable = deletable;
     }
 }

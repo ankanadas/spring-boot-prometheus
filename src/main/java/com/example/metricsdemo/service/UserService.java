@@ -231,15 +231,21 @@ public class UserService {
     }
 
     @Transactional
-    public boolean deleteUser(Long id) {
-        logger.info("Attempting to delete user with ID: {}", id);
+    public boolean deleteUser(Long id, String currentUsername) {
+        logger.info("Attempting to delete user with ID: {} by user: {}", id, currentUsername);
         if (userRepository.existsById(id)) {
             Optional<User> user = userRepository.findById(id);
             String userName = user.map(User::getName).orElse("Unknown");
             
-            // Check if this is the admin user - prevent deletion
+            // Check if user is trying to delete themselves
             if (user.isPresent()) {
                 UserCredentials credentials = user.get().getCredentials();
+                if (credentials != null && credentials.getUsername().equals(currentUsername)) {
+                    logger.warn("User {} attempted to delete their own account - operation blocked", currentUsername);
+                    throw new IllegalArgumentException("You cannot delete your own account");
+                }
+                
+                // Also prevent deletion of the default admin user by username
                 if (credentials != null && "admin".equals(credentials.getUsername())) {
                     logger.warn("Attempted to delete admin user - operation blocked");
                     throw new IllegalArgumentException("Cannot delete the admin user");
@@ -278,6 +284,27 @@ public class UserService {
     
     public List<Department> getAllDepartments() {
         return departmentRepository.findAll();
+    }
+    
+    @Transactional
+    public Department createDepartment(String name, String description) {
+        logger.info("Creating new department: name={}, description={}", name, description);
+        
+        // Check if department with same name already exists
+        List<Department> existingDepartments = departmentRepository.findAll();
+        boolean exists = existingDepartments.stream()
+            .anyMatch(d -> d.getName().equalsIgnoreCase(name));
+        
+        if (exists) {
+            logger.warn("Department with name '{}' already exists", name);
+            throw new IllegalArgumentException("Department with name '" + name + "' already exists");
+        }
+        
+        Department department = new Department(name, description);
+        Department savedDepartment = departmentRepository.save(department);
+        
+        logger.info("Created department: {} with ID: {}", savedDepartment.getName(), savedDepartment.getId());
+        return savedDepartment;
     }
     
     public Page<?> fuzzySearchUsers(String searchTerm, int page, int size) {

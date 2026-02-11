@@ -1,6 +1,7 @@
 package com.example.metricsdemo.controller;
 
 import com.example.metricsdemo.dto.*;
+import com.example.metricsdemo.model.Department;
 import com.example.metricsdemo.model.User;
 import com.example.metricsdemo.service.UserService;
 import io.micrometer.core.annotation.Counted;
@@ -68,14 +69,17 @@ public class UserController {
     })
     public List<UserDTO> getAllUsers(
             @Parameter(description = "Page number (0-indexed)") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Number of users per page") @RequestParam(defaultValue = "5") int size) {
+            @Parameter(description = "Number of users per page") @RequestParam(defaultValue = "5") int size,
+            org.springframework.security.core.Authentication authentication) {
         userRetrievalCounter.increment();
         
         // Simulate some processing time
         simulateProcessingTime();
         
+        String currentUsername = authentication != null ? authentication.getName() : null;
+        
         return userService.getAllUsers(page, size).stream()
-            .map(this::convertToDTO)
+            .map(user -> convertToDTO(user, currentUsername))
             .collect(Collectors.toList());
     }
 
@@ -87,16 +91,19 @@ public class UserController {
     })
     public ResponseEntity<PagedResponse<UserDTO>> getAllUsersPaged(
             @Parameter(description = "Page number (0-indexed)") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Number of users per page") @RequestParam(defaultValue = "5") int size) {
+            @Parameter(description = "Number of users per page") @RequestParam(defaultValue = "5") int size,
+            org.springframework.security.core.Authentication authentication) {
         userRetrievalCounter.increment();
         
         // Simulate some processing time
         simulateProcessingTime();
         
+        String currentUsername = authentication != null ? authentication.getName() : null;
+        
         Page<User> userPage = userService.getAllUsersPaged(page, size);
         
         List<UserDTO> userDTOs = userPage.getContent().stream()
-            .map(this::convertToDTO)
+            .map(user -> convertToDTO(user, currentUsername))
             .collect(Collectors.toList());
         
         PagedResponse<UserDTO> response = new PagedResponse<>(
@@ -119,11 +126,14 @@ public class UserController {
     public ResponseEntity<PagedResponse<UserDTO>> searchUsers(
             @Parameter(description = "Search query string (handles typos)") @RequestParam(required = false, defaultValue = "") String query,
             @Parameter(description = "Page number (0-indexed)") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Number of users per page") @RequestParam(defaultValue = "5") int size) {
+            @Parameter(description = "Number of users per page") @RequestParam(defaultValue = "5") int size,
+            org.springframework.security.core.Authentication authentication) {
         userRetrievalCounter.increment();
         
         // Simulate some processing time
         simulateProcessingTime();
+        
+        String currentUsername = authentication != null ? authentication.getName() : null;
         
         Page<User> userPage;
         
@@ -138,7 +148,7 @@ public class UserController {
         }
         
         List<UserDTO> userDTOs = userPage.getContent().stream()
-            .map(this::convertToDTO)
+            .map(user -> convertToDTO(user, currentUsername))
             .collect(Collectors.toList());
         
         PagedResponse<UserDTO> response = new PagedResponse<>(
@@ -279,19 +289,23 @@ public class UserController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Timed(value = "delete_user_duration", description = "Time taken to delete a user")
-    @Operation(summary = "Delete user", description = "Delete a user and remove from Redis cache (ADMIN only)")
+    @Operation(summary = "Delete user", description = "Delete a user and remove from Redis cache (ADMIN only). Admin cannot delete themselves.")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "User deleted successfully"),
+        @ApiResponse(responseCode = "403", description = "Cannot delete your own account"),
         @ApiResponse(responseCode = "404", description = "User not found")
     })
     public ResponseEntity<Void> deleteUser(
-            @Parameter(description = "User ID") @PathVariable Long id) {
+            @Parameter(description = "User ID") @PathVariable Long id,
+            org.springframework.security.core.Authentication authentication) {
         userDeletionCounter.increment();
         
         // Simulate some processing time
         simulateProcessingTime();
         
-        userService.deleteUser(id);
+        // Prevent admin from deleting themselves
+        String currentUsername = authentication.getName();
+        userService.deleteUser(id, currentUsername);
         return ResponseEntity.ok().build();
     }
 
@@ -357,13 +371,39 @@ public class UserController {
         return ResponseEntity.ok("Reindexed " + count + " users in Elasticsearch");
     }
     
+    @PostMapping("/departments")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Create new department", description = "Create a new department (ADMIN only)")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Department created successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid request")
+    })
+    public ResponseEntity<?> createDepartment(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                description = "Department creation request",
+                required = true,
+                content = @Content(schema = @Schema(implementation = CreateDepartmentRequest.class))
+            )
+            @Valid @RequestBody CreateDepartmentRequest request) {
+        Department department = userService.createDepartment(request.getName(), request.getDescription());
+        return ResponseEntity.ok(department);
+    }
+    
     // Helper method to convert User entity to UserDTO
     private UserDTO convertToDTO(User user) {
+        return convertToDTO(user, null);
+    }
+    
+    // Overloaded method that accepts current username for deletable check
+    private UserDTO convertToDTO(User user, String currentUsername) {
         Set<String> roleNames = user.getUserRoles().stream()
             .map(ur -> ur.getRole().getName())
             .collect(Collectors.toSet());
         
         String username = user.getCredentials() != null ? user.getCredentials().getUsername() : null;
+        
+        // User is not deletable if they are the currently logged-in user (can't delete yourself)
+        boolean deletable = currentUsername == null || !username.equals(currentUsername);
         
         return new UserDTO(
             user.getId(),
@@ -372,7 +412,8 @@ public class UserController {
             user.getEmail(),
             user.getDepartment().getId(),
             user.getDepartment().getName(),
-            roleNames
+            roleNames,
+            deletable
         );
     }
 }

@@ -157,24 +157,32 @@ public class UserService {
 
     @Transactional
     public User updateUser(Long id, String name, String email, Long departmentId, String password, Set<String> roleNames) {
-        logger.info("Attempting to update user with ID: {}", id);
+        logger.info("Attempting to update user with ID: {} - name={}, email={}, departmentId={}, password={}, roles={}", 
+            id, name, email, departmentId, password != null ? "***" : null, roleNames);
         Optional<User> optionalUser = userRepository.findById(id);
         if (optionalUser.isPresent()) {
             User user = optionalUser.get();
             String oldName = user.getName();
             String oldEmail = user.getEmail();
             String oldDepartment = user.getDepartment() != null ? user.getDepartment().getName() : "null";
+            Long oldDepartmentId = user.getDepartment() != null ? user.getDepartment().getId() : null;
             
             // Update basic fields
             if (name != null) {
                 user.setName(name);
+                logger.info("Updated name from '{}' to '{}'", oldName, name);
             }
             if (email != null) {
                 user.setEmail(email);
+                logger.info("Updated email from '{}' to '{}'", oldEmail, email);
             }
             if (departmentId != null) {
                 Department department = getDepartmentById(departmentId);
                 user.setDepartment(department);
+                logger.info("Updated department from '{}' (ID: {}) to '{}' (ID: {})", 
+                    oldDepartment, oldDepartmentId, department.getName(), department.getId());
+            } else {
+                logger.info("Department ID is null, keeping existing department: {} (ID: {})", oldDepartment, oldDepartmentId);
             }
             
             // Update password if provided
